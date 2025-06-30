@@ -21,9 +21,9 @@ public:
     MixGMD();
     void readDB(std::fstream &fh);
     void writeDB(std::fstream &fh);
-    std::string getName(t_game game, int32_t id);
-    bool addName(t_game game, std::string name, std::string desc);
-    bool deleteName(t_game game, std::string name);
+    std::string getName(GameKind game, int32_t id);
+    bool addName(GameKind game, std::string name, std::string desc);
+    bool deleteName(GameKind game, std::string name);
 private:
     MixGameDB m_td_list;
     MixGameDB m_ra_list;

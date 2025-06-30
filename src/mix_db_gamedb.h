@@ -18,13 +18,13 @@
 class MixGameDB
 {
 public:
-    MixGameDB(t_game game);
+    MixGameDB(GameKind game);
     void readDB(const char* data, uint32_t offset);
     void writeDB(std::fstream &fh);
     std::string getName(int32_t id);
     bool addName(std::string name, std::string description);
     bool deleteName(std::string name);
-    t_game getGame() { return m_game_type; }
+    GameKind getGame() { return m_game_type; }
     uint32_t getSize() { return m_size; }
     
 private:
@@ -40,7 +40,7 @@ private:
     t_id_map m_name_map;
     uint32_t m_size;
     uint32_t m_entries;
-    t_game m_game_type;
+    GameKind m_game_type;
 };
 
 #endif	/* MIX_DB_GAMEDB_H */

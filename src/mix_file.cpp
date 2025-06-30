@@ -46,7 +46,7 @@ string MixFile::baseName(string const& pathname)
     return rv;
 }
 
-MixFile::MixFile(const string gmd, t_game game) :
+MixFile::MixFile(const string gmd, GameKind game) :
 m_header(game),
 m_global_db(),
 m_local_db(game)

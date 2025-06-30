@@ -41,7 +41,7 @@
 class MixFile {
 public:
     MixFile(const std::string gmd = "global mix database.dat" , 
-            t_game openGame = game_td);
+            GameKind openGame = TD);
     virtual ~MixFile();
     /**
      * @brief open mix archive

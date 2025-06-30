@@ -16,14 +16,14 @@
 class MixLMD
 {
 public:
-    MixLMD(t_game game);
+    MixLMD(GameKind game);
     void readDB(std::fstream &fh, uint32_t offset, uint32_t size);
     void writeDB(std::fstream &fh);
     std::string getName(int32_t id);
     bool addName(std::string name);
     bool deleteName(std::string name);
     bool deleteName(int32_t id);
-    t_game getGame() { return m_game_type; }
+    GameKind getGame() { return m_game_type; }
     uint32_t getSize() { return m_size; }
     std::string getDBName() { return "local mix database.dat"; }
     
@@ -34,7 +34,7 @@ private:
     static const char m_xcc_id[32];
     t_id_map m_name_map;
     uint32_t m_size;
-    t_game m_game_type;
+    GameKind m_game_type;
     int32_t m_id;
 };
 

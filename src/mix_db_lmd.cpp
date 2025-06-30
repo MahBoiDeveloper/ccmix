@@ -6,7 +6,7 @@ using namespace std;
 
 const char MixLMD::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 
-MixLMD::MixLMD(t_game game)
+MixLMD::MixLMD(GameKind game)
 {
     m_game_type = game;
     m_size = 52;

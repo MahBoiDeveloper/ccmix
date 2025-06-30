@@ -84,7 +84,7 @@ typedef std::map<int32_t, t_index_info>::iterator t_mix_index_iter;
 class MixHeader
 {
 public:
-    MixHeader(t_game game);
+    MixHeader(GameKind game);
     bool readHeader(std::fstream &fh);
     bool readKeySource(std::fstream &fh);
     bool writeHeader(std::fstream &fh);
@@ -97,7 +97,7 @@ public:
     bool getIsEncrypted() { return m_is_encrypted; }
     void setIsEncrypted();
     void clearIsEncrypted();
-    t_game getGame() { return m_game_type; }
+    GameKind getGame() { return m_game_type; }
     //void printContents();
     
     uint32_t getHeaderSize() { return m_header_size; }
@@ -115,7 +115,7 @@ private:
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
     
-    t_game m_game_type;
+    GameKind m_game_type;
     uint16_t m_file_count;
     uint32_t m_body_size;
     uint32_t m_header_flags;
@@ -131,7 +131,7 @@ private:
     bool writeEncrypted(std::fstream &fh);
     bool readUnEncrypted(std::fstream &fh);
     bool writeUnEncrypted(std::fstream &fh);
-    //void setGame(t_game game); //{ m_game_type = game; }
+    //void setGame(GameKind game); //{ m_game_type = game; }
 };
 
 #endif	/* MIX_HEADER_H */

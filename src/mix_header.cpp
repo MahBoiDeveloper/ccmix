@@ -28,7 +28,7 @@ using CryptoPP::RSA;
 using CryptoPP::ECB_Mode;
 using CryptoPP::Blowfish;
 
-MixHeader::MixHeader(t_game game) :
+MixHeader::MixHeader(GameKind game) :
 mix_checksum(0x00010000),
 mix_encrypted(0x00020000)
 {
@@ -59,8 +59,8 @@ bool MixHeader::readHeader(std::fstream &fh)
     
     if(*reinterpret_cast<uint16_t*>(flagbuff)) {
         if(m_game_type > 1){
-            //m_game_type = game_td;
-            std::cout << "Warning, header indicates mix is of type \"game_td\" "<<
+            //m_game_type = TD;
+            std::cout << "Warning, header indicates mix is of type \"TD\" "<<
                     " but isn't what you specified" << std::endl;
         }
         
@@ -276,7 +276,7 @@ void MixHeader::setKeySource()
     RSA::PrivateKey rsakey;
     rsakey.Initialize(Integer(PUBKEY), Integer(PRVKEY), Integer("0x10001"));
     
-    if(m_game_type > game_ra) {
+    if(m_game_type > RA) {
         byte1 = 0x18;
         byte2 = 0xBB;
     } else {
@@ -459,9 +459,9 @@ bool MixHeader::removeEntry(int32_t id, bool adjust = false)
 }
 
 //Would there be a use for this?
-/*void MixHeader::setGame(t_game game)
+/*void MixHeader::setGame(GameKind game)
 {
-    t_game old = m_game_type
+    GameKind old = m_game_type
     m_game_type = game;
     
     //have we gone from new type header to old?

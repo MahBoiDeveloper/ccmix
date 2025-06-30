@@ -2,10 +2,10 @@
 #include <iostream>
 
 MixGMD::MixGMD() :
-m_td_list(game_td),
-m_ra_list(game_ra),
-m_ts_list(game_ts),
-m_ra2_list(game_ra2)
+m_td_list(TD),
+m_ra_list(RA),
+m_ts_list(TS),
+m_ra2_list(RA2)
 {
     m_db_array.push_back(&m_td_list);
     m_db_array.push_back(&m_ra_list);
@@ -47,48 +47,48 @@ void MixGMD::writeDB(std::fstream& fh)
     }
 }
 
-std::string MixGMD::getName(t_game game, int32_t id)
+std::string MixGMD::getName(GameKind game, int32_t id)
 {
     switch(game){
-        case game_td:
+        case TD:
             return m_td_list.getName(id);
-        case game_ra:
+        case RA:
             return m_ra_list.getName(id);
-        case game_ts:
+        case TS:
             return m_ts_list.getName(id);
-        case game_ra2:
+        case RA2:
             return m_ra2_list.getName(id);
         default:
             return "";
     }
 }
 
-bool MixGMD::addName(t_game game, std::string name, std::string desc = "")
+bool MixGMD::addName(GameKind game, std::string name, std::string desc = "")
 {
     switch(game){
-        case game_td:
+        case TD:
             return m_td_list.addName(name, desc);
-        case game_ra:
+        case RA:
             return m_ra_list.addName(name, desc);
-        case game_ts:
+        case TS:
             return m_ts_list.addName(name, desc);
-        case game_ra2:
+        case RA2:
             return m_ra2_list.addName(name, desc);
         default:
             return false;
     }
 }
 
-bool MixGMD::deleteName(t_game game, std::string name)
+bool MixGMD::deleteName(GameKind game, std::string name)
 {
     switch(game){
-        case game_td:
+        case TD:
             return m_td_list.deleteName(name);
-        case game_ra:
+        case RA:
             return m_ra_list.deleteName(name);
-        case game_ts:
+        case TS:
             return m_ts_list.deleteName(name);
-        case game_ra2:
+        case RA2:
             return m_ra2_list.deleteName(name);
         default:
             return false;

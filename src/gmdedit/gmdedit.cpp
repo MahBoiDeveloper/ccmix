@@ -10,7 +10,7 @@
 #include <iostream>
 
 typedef std::pair<std::string, std::string> t_namepair;
-t_game game;
+GameKind game;
 std::vector<t_namepair> names;
 
 /*
@@ -26,16 +26,16 @@ std::vector<t_namepair> names;
                   << ">:";
         std::cin >> choice;
         if(choice == "td"){
-            game = game_td;
+            game = TD;
             return false;
         } else if(choice == "ra") {
-            game = game_ra;
+            game = RA;
             return false;
         } else if(choice == "ts") {
-            game = game_ts;
+            game = TS;
             return false;
         } else if(choice == "ra2") {
-            game = game_ra2;
+            game = RA2;
             return false;
         } else if(choice == "quit") {
             return true;
@@ -69,7 +69,7 @@ bool addEntry()
 void menu()
 {
     bool quit = false
-    game = game_td;
+    game = TD;
     
     while(!quit){
         quit = gameChoice();
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
         std::cout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
         return 1;
     } else {
-        game = game_td;
+        game = TD;
         
         ifh.open(argv[2], std::ios_base::in);
 
@@ -116,4 +116,3 @@ int main(int argc, char** argv) {
     
     return 0;
 }
-

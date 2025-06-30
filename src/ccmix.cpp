@@ -1,13 +1,5 @@
-/* 
- * File:   ccmix.cpp
- * Author: fbsagr
- *
- * Created on April 10, 2014, 1:43 PM
- */
-
 #include "SimpleOpt.h"
 #include "mix_file.h"
-//#include "SimpleGlob.h"
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
@@ -56,11 +48,14 @@ static const string getProgramDir(const char* const program_location)
 
     size_t size = strlen(loc);
     
-    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i) {
+    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i)
+    {
 
-        if (loc[i] == DIR_SEPARATOR) {
+        if (loc[i] == DIR_SEPARATOR) 
+        {
             char* curdir = (char*) malloc((i + 1) * sizeof (char));
-            if (curdir != NULL) {
+            if (curdir != NULL) 
+            {
                 strncpy(curdir, loc, (size_t) i);
                 curdir[i] = '\0';
                 return string(curdir);
@@ -72,8 +67,8 @@ static const string getProgramDir(const char* const program_location)
     return string(curdir);
 }
 
-//search and test a few locations for a global mix database
-//TODO copy gmd if found but not in a home dir config.
+// Search and test a few locations for a global mix database
+// TODO copy gmd if found but not in a home dir config.
 string findGMD(const string program_dir, const string home_dir)
 {
     string gmd_loc = "global mix database.dat";
@@ -81,9 +76,11 @@ string findGMD(const string program_dir, const string home_dir)
     gmd_dir[0] = home_dir;
     gmd_dir[1] = "/usr/share/ccmix";
     gmd_dir[2] = program_dir;
-    for (unsigned int i = 0; i < gmd_dir.size(); i++) {
+    for (unsigned int i = 0; i < gmd_dir.size(); i++)
+    {
         string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
-        if (FILE *file = fopen(gmd_test.c_str(), "r")) {
+        if (FILE *file = fopen(gmd_test.c_str(), "r"))
+        {
             fclose(file);
             return gmd_test;
         }
@@ -181,11 +178,10 @@ uint32_t StringToID(string in_string)
     
     char* p;
     uint32_t n = strtoul( in_string.c_str(), &p, 16 ); 
-    if ( * p != 0 ) {  
+    if ( * p != 0 ) 
     	return 0;
-    }    else {  
+    else 
     	return n;
-    }
 }
 
 //Function handles the different ways to extract files from a mix.
@@ -297,7 +293,7 @@ int _tmain(int argc, TCHAR** argv)
     string input_mixfile = "";
     const string program_path(argv[0]);
     string user_home_dir = GetHomeDir();
-    t_game game = game_td;
+    GameKind game = TD;
     t_mixmode mode = NONE;
     bool local_db = false;
     bool encrypt = false;
@@ -382,13 +378,13 @@ int _tmain(int argc, TCHAR** argv)
             {
                 string gt = string(args.OptionArg());
                 if(gt == games[0]){
-                    game = game_td;
+                    game = TD;
                 } else if(gt == games[1]){
-                    game = game_ra;
+                    game = RA;
                 } else if(gt == games[2]){
-                    game = game_ts;
+                    game = TS;
                 } else if(gt == games[3]){
-                    game = game_ra2;
+                    game = RA2;
                 } else {
                     _tprintf(_T("--game is either td, ra, ts or ra2.\n"));
                 }
