@@ -1,12 +1,7 @@
 #pragma once
 
 #include <string>
-
-#ifdef _MSC_VER
-    #include "win32/stdint.h"
-#else
-    #include <stdint.h>
-#endif
+#include <stdint.h>
 
 typedef enum 
 {

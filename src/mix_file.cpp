@@ -6,8 +6,8 @@
 
 #endif
 
-#include "cryptopp/sha.h"
-#include "cryptopp/integer.h"
+#include "../cryptopp/sha.h"
+#include "../cryptopp/integer.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>

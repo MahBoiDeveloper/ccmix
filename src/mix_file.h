@@ -8,11 +8,7 @@
 #include <vector>
 #include <map>
 
-#ifdef _MSC_VER
-#include "win32/stdint.h"
-#else
 #include <stdint.h>
-#endif
 
 /**
  * @brief Mix Databases.

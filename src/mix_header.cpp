@@ -1,15 +1,13 @@
 #include "mix_header.h"
 
 #ifdef _MSC_VER
-
-#include <Windows.h>
-
+    #include <Windows.h>
 #endif
 
-#include "cryptopp/rsa.h"
-#include "cryptopp/blowfish.h"
-#include "cryptopp/integer.h"
-#include "cryptopp/modes.h"
+#include "../cryptopp/rsa.h"
+#include "../cryptopp/blowfish.h"
+#include "../cryptopp/integer.h"
+#include "../cryptopp/modes.h"
 
 #include <cstdlib>
 #include <ctime>
