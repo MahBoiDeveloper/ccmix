@@ -306,8 +306,8 @@ void MixHeader::setKeySource()
     Integer keyblk1 = blowfish >> 312;
     Integer keyblk2 = blowfish - (keyblk1 << 312);
     
-    std::wcout << "Generated Blowfish Key:\n";
-    std::wcout << std::hex << blowfish << std::dec << "\n";
+    std::wcout << L"Generated Blowfish Key:" << std::endl;
+    std::cout << std::hex << blowfish << std::dec << "\n";
     
     //encrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);

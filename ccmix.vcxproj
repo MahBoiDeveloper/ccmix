@@ -138,11 +138,11 @@
     <ClCompile Include="src/mix_header.cpp" />
     <ClCompile Include="src/mix_header.h" />
     <ClCompile Include="src/SimpleOpt.h" />
-    <ClCompile Include="src/gmdedit/gmdedit.cpp" />
+    <ClCompile Include="src/gmdedit.cpp" />
     <ClCompile Include="src/win32/dirent.h" />
-    <ClCompile Include="src/mixkey/mixkey.cpp" />
-    <ClCompile Include="src/mixkey/mix_dexoder.cpp" />
-    <ClCompile Include="src/mixkey/mix_dexoder.h" />
+    <ClCompile Include="src/mixkey.cpp" />
+    <ClCompile Include="src/mix_dexoder.cpp" />
+    <ClCompile Include="src/mix_dexoder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

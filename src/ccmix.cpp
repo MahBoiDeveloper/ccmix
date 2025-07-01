@@ -512,8 +512,7 @@ int _tmain(int argc, TCHAR** argv)
     }
     case LIST:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()),
-            user_home_dir), game);
+        MixFile in_file(findGMD(std::filesystem::current_path()), user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) {
             std::wcout << "Cannot open specified mix file" << std::endl;

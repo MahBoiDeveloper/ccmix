@@ -6,7 +6,7 @@
  */
 
 #include "mix_dexoder.h"
-#include "cryptopp/integer.h"
+#include "../cryptopp/integer.h"
 #include <stdio.h>
 #include <iostream>
 

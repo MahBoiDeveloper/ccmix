@@ -1,22 +1,29 @@
-/* 
- * File:   mix_db_gamedb.h
- * Author: fbsagr
- *
- * Created on June 3, 2014, 3:40 PM
- */
-
-#ifndef MIX_DB_GAMEDB_H
-#define	MIX_DB_GAMEDB_H
+#pragma once
 
 #include "mixid.h"
 #include <string>
 #include <fstream>
 #include <map>
 
-//GameDB databases represent internal databases in global mix database
-//each handled game has its own DB internally
+/// @brief GameDB databases represent internal databases in global mix database. Each handled game has its own DB internally
 class MixGameDB
 {
+private:
+    struct IdData 
+    {
+        std::string name;
+        std::string description;
+    };
+
+    typedef std::map<int32_t, IdData> IdMap;
+    typedef std::pair<int32_t, IdData> IdPair;
+    typedef std::map<int32_t, IdData>::const_iterator IdIter;
+
+    IdMap m_name_map;
+    uint32_t m_size;
+    uint32_t m_entries;
+    GameKind m_game_type;
+
 public:
     MixGameDB(GameKind game);
     void readDB(const char* data, uint32_t offset);
@@ -26,22 +33,4 @@ public:
     bool deleteName(std::string name);
     GameKind getGame() { return m_game_type; }
     uint32_t getSize() { return m_size; }
-    
-private:
-    struct t_id_data {
-        std::string name;
-        std::string description;
-    };
-    
-    typedef std::map<int32_t, t_id_data> t_id_map;
-    typedef std::pair<int32_t, t_id_data> t_id_pair;
-    typedef std::map<int32_t, t_id_data>::const_iterator t_id_iter;
-    
-    t_id_map m_name_map;
-    uint32_t m_size;
-    uint32_t m_entries;
-    GameKind m_game_type;
 };
-
-#endif	/* MIX_DB_GAMEDB_H */
-

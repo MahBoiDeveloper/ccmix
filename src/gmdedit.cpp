@@ -5,7 +5,7 @@
  * Created on 03 September 2014, 19:33
  */
 
-#include "../mix_db_gmd.h"
+#include "mix_db_gmd.h"
 #include <stdio.h>
 #include <iostream>
 
@@ -76,7 +76,7 @@ void menu()
     } 
 }*/
 
-int main(int argc, char** argv) {
+int GmeditMain(int argc, char** argv) {
     
     MixGMD gmd;
     std::fstream ifh;
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
             t_namepair entry;
             std::getline(ifh, entry.first, ',');
             std::getline(ifh, entry.second);
-            std::wcout << entry.first << " - " << entry.second << "\n";
+            std::cout << entry.first << " - " << entry.second << "\n";
             if(entry.first != ""){
                 names.push_back(entry);
             }

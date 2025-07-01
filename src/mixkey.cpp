@@ -1,12 +1,12 @@
 #include "mix_dexoder.h"
-#include "cryptolib/rsa.h"
-#include "cryptolib/blowfish.h"
-#include "cryptolib/base64.h"
-#include "cryptolib/integer.h"
-#include "cryptolib/hex.h"
-#include "cryptolib/osrng.h"
-#include "cryptolib/modes.h"
-#include "cryptolib/secblock.h"
+#include "../cryptopp/rsa.h"
+#include "../cryptopp/blowfish.h"
+#include "../cryptopp/base64.h"
+#include "../cryptopp/integer.h"
+#include "../cryptopp/hex.h"
+#include "../cryptopp/osrng.h"
+#include "../cryptopp/modes.h"
+#include "../cryptopp/secblock.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -22,12 +22,12 @@ const uint8_t SHADOWS_ARRAY[] = { 0xe, 0x3, 0x5, 0x8, 0x9, 0x4, 0x2, 0xf, 0x0, 0
 
 void BintToBfish(Integer& bint, uint8_t* key, int len = 56)
 {
-    size_t len = 56;
-    uint8_t buffer[len];
-    bint.Encode(buffer, len);
+    const size_t buff_len = 56;
+    uint8_t buffer[buff_len];
+    bint.Encode(buffer, buff_len);
     
-    int j = len - 1;
-    for(int i = 0; i < len; i++)
+    int j = buff_len - 1;
+    for(int i = 0; i < buff_len; i++)
     {
         key[i] = buffer[j];
         j--;
@@ -98,10 +98,10 @@ int main(int argc, char* argv[])
     //std::wcout << std::dec << d.BitCount() << "\n";
     //std::wcout << std::hex << d << "\n\n";
     
-    std::wcout << "XCC code blowfish key, encoded part 1 and 2:\n";
-    std::wcout << std::hex << bfshkeyint << "\n";
-    std::wcout << std::hex << keyblk1 << "\n";
-    std::wcout << std::hex << keyblk2 << "\n\n";
+    std::cout << "XCC code blowfish key, encoded part 1 and 2:" << std::endl;
+    std::cout << std::hex << bfshkeyint << std::endl;
+    std::cout << std::hex << keyblk1 << std::endl;
+    std::cout << std::hex << keyblk2 << std::endl << std::endl;
     
     AutoSeededRandomPool rng;
     
@@ -125,10 +125,10 @@ int main(int argc, char* argv[])
     //std::wcout << std::dec << blowfishkey.BitCount() << "\n";
     //std::wcout << std::hex << blowfishkey << "\n";
     
-    std::wcout << "RSA blowfish key, decoded part1 and 2:\n";
-    std::wcout << std::hex << blowfishkey << "\n";
-    std::wcout << std::hex << dec1 << "\n";
-    std::wcout << std::hex << dec2 << "\n\n";
+    std::cout << "RSA blowfish key, decoded part1 and 2:" << std::endl;
+    std::cout << std::hex << blowfishkey << std::endl;
+    std::cout << std::hex << dec1 << std::endl;
+    std::cout << std::hex << dec2 << std::endl << std::endl;
     
     BintToBfish(blowfishkey, nukey);
     //Integer testkey(nukey, 56);

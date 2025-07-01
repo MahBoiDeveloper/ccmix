@@ -28,11 +28,11 @@ public:
     std::string getDBName() { return "local mix database.dat"; }
     
 private:
-    typedef std::map<int32_t, std::string> t_id_map;
-    typedef std::pair<int32_t, std::string> t_id_pair;
-    typedef std::map<int32_t, std::string>::const_iterator t_id_iter;
+    typedef std::map<int32_t, std::string> IdMap;
+    typedef std::pair<int32_t, std::string> IdPair;
+    typedef std::map<int32_t, std::string>::const_iterator IdIter;
     static const char m_xcc_id[32];
-    t_id_map m_name_map;
+    IdMap m_name_map;
     uint32_t m_size;
     GameKind m_game_type;
     int32_t m_id;

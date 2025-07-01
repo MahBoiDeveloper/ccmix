@@ -43,9 +43,9 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
             continue;
         }
         
-        std::pair<t_id_iter,bool> rv;
+        std::pair<IdIter,bool> rv;
         data += id_data.length() + 1;
-        rv = m_name_map.insert(t_id_pair(id, id_data));
+        rv = m_name_map.insert(IdPair(id, id_data));
         if(rv.second) {
             m_size += id_data.length() + 1;
         } else {
@@ -69,14 +69,14 @@ void MixLMD::writeDB(std::fstream& fh)
     //rest of header
     fh.write(reinterpret_cast<const char*> (xcc_head), sizeof(xcc_head));
     //filenames
-    for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
+    for(IdIter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
         fh.write(it->second.c_str(), it->second.size() + 1);
     }
 }
 
 std::string MixLMD::getName(int32_t id)
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIter rv = m_name_map.find(id);
     
     if(rv != m_name_map.end()){
         return rv->second;
@@ -87,8 +87,8 @@ std::string MixLMD::getName(int32_t id)
 
 bool MixLMD::addName(std::string name)
 {
-    std::pair<t_id_iter,bool> rv;
-    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type, name), name));
+    std::pair<IdIter,bool> rv;
+    rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type, name), name));
     if(rv.second) {
         m_size += name.length() + 1;
         return true;
@@ -107,7 +107,7 @@ bool MixLMD::deleteName(std::string name)
 
 bool MixLMD::deleteName(int32_t id)
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIter rv = m_name_map.find(id);
     if(rv == m_name_map.end()){
         std::wcout << "Name not found in local DB." << std::endl;
         return false;

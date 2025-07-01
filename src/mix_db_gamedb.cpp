@@ -20,9 +20,9 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
-    t_id_data id_data;
+    IdData id_data;
     for(uint32_t i = 0; i != m_entries; i++){
-        std::pair<t_id_iter,bool> rv;
+        std::pair<IdIter,bool> rv;
         
         //data is incremented and read twice, once for filename, once for desc.
         id_data.name = data;
@@ -32,7 +32,7 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
         data += id_data.description.length() + 1;
         m_size += id_data.description.length() + 1;
         //attempt to insert data and figure out if we had a collision.
-        rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
+        rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type,
                         id_data.name), id_data));
     }
 }
@@ -46,7 +46,7 @@ void MixGameDB::writeDB(std::fstream& fh)
     }
     fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
-    for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
+    for(IdIter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
         fh.write(it->second.name.c_str(), it->second.name.size() + 1);
         fh.write(it->second.description.c_str(), it->second.description.size() + 1);
     }
@@ -54,7 +54,7 @@ void MixGameDB::writeDB(std::fstream& fh)
 
 std::string MixGameDB::getName(int32_t id)
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIter rv = m_name_map.find(id);
     
     if(rv != m_name_map.end()){
         return rv->second.name;
@@ -65,12 +65,12 @@ std::string MixGameDB::getName(int32_t id)
 
 bool MixGameDB::addName(std::string name, std::string description)
 {
-    t_id_data id_data;
+    IdData id_data;
     id_data.name = name;
     id_data.description = description;
     
-    std::pair<t_id_iter,bool> rv;
-    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
+    std::pair<IdIter,bool> rv;
+    rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type,
                     name), id_data));
     if(rv.second) {
         m_size += name.length() + 1;
