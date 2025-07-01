@@ -3,7 +3,7 @@
 #include <string>
 #include <stdint.h>
 
-typedef enum 
+enum class GameKind
 {
     TD,
     RA,
@@ -11,13 +11,13 @@ typedef enum
     D2,
     D2K,
     RA2
-} GameKind;
+};
 
 namespace MixID
 {
-    int32_t idGen(GameKind game, std::string fname);
+    int32_t     idGen(GameKind game, std::string fname);
     std::string idStr(int32_t id);
     std::string idStr(char* id, uint32_t size);
-    int32_t strId(std::string hex);
-    bool isIdName(std::string fname);
+    int32_t     strId(std::string hex);
+    bool        isIdName(std::string fname);
 }

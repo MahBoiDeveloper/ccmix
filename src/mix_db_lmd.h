@@ -1,16 +1,6 @@
-/* 
- * File:   mix_db_lmd.h
- * Author: fbsagr
- *
- * Created on May 21, 2014, 11:57 AM
- */
-
-#ifndef MIX_DB_LMD_H
-#define	MIX_DB_LMD_H
-
+#pragma once
 #include "mixid.h"
 #include <fstream>
-//#include <vector>
 #include <map>
 
 class MixLMD
@@ -37,6 +27,3 @@ private:
     GameKind m_game_type;
     int32_t m_id;
 };
-
-#endif	/* MIX_DB_LMD_H */
-

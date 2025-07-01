@@ -12,12 +12,7 @@
 #include <tchar.h>
 #include "win32/dirent.h"
 
-#ifdef _WIN32
-    #define DIR_SEPARATOR '\\'
-#else
-    #define DIR_SEPARATOR '/'
-    #include <pwd.h>
-#endif
+#define DIR_SEPARATOR '\\'
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
        OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC, OPT_CHK, OPT_INFO, OPT_ADD, 
@@ -25,12 +20,6 @@ enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
 
 const std::string games[] = {"td", "ra", "ts", "ra2"};
-
-//get program directory from argv[0]
-std::string getProgramDir(const char* const program_location) 
-{
-    return std::filesystem::current_path().generic_string();
-}
 
 // Search and test a few locations for a global mix database
 // TODO copy gmd if found but not in a home dir config.
@@ -360,22 +349,17 @@ int _tmain(int argc, TCHAR** argv)
         }
         case OPT_GAME:
         {
-            std::string gt = std::string(args.OptionArg());
-            if (gt == games[0]) {
+            std::string gt = std::string(args.OptionArg().c_str());
+            if (gt == games[0])
                 game = TD;
-            }
-            else if (gt == games[1]) {
+            else if (gt == games[1])
                 game = RA;
-            }
-            else if (gt == games[2]) {
+            else if (gt == games[2])
                 game = TS;
-            }
-            else if (gt == games[3]) {
+            else if (gt == games[3])
                 game = RA2;
-            }
-            else {
-                _tprintf(_T("--game is either td, ra, ts or ra2.\n"));
-            }
+            else
+                std::cout << "--game is either td, ra, ts or ra2." << std::endl;
 
             break;
         }

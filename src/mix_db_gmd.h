@@ -1,13 +1,4 @@
-/* 
- * File:   mix_db_gmd.h
- * Author: fbsagr
- *
- * Created on May 30, 2014, 4:30 PM
- */
-
-#ifndef MIX_DB_GMD_H
-#define	MIX_DB_GMD_H
-
+#pragma once
 #include "mix_db_gamedb.h"
 
 #include <vector>
@@ -31,5 +22,3 @@ private:
     MixGameDB m_ra2_list;
     std::vector<MixGameDB*> m_db_array;
 };
-
-#endif	/* MIX_DB_GMD_H */

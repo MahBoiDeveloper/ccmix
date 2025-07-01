@@ -1,17 +1,10 @@
-/* 
- * File:   mix_dexoder.cpp
- * Author: ivosh-l
- * 
- * Created on 29. prosinec 2011, 11:31
- */
-
 #include "mix_dexoder.h"
 #include "../cryptopp/integer.h"
 #include <stdio.h>
 #include <iostream>
 
-const char *pubkey_str = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
-const char *prvkey_str = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
+const char* PUBKEY_DEFAULT_STR = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
+const char* PRVKEY_DEFAULT_STR = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
 
 const static char char2num[] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -41,6 +34,7 @@ static struct
     bignum key2;
     uint32_t len;
 } pubkey;
+
 bignum glob1;
 uint32_t glob1_bitlen, glob1_len_x2;
 bignum130 glob2;
@@ -129,12 +123,12 @@ static void init_pubkey()
 
     i = 0;
     i2 = 0;
-    while (i < strlen(pubkey_str))
+    while (i < strlen(PUBKEY_DEFAULT_STR))
     {
-        tmp = char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
+        tmp = char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
         keytmp[i2++] = (tmp >> 16) & 0xff;
         keytmp[i2++] = (tmp >> 8) & 0xff;
         keytmp[i2++] = tmp & 0xff;
@@ -151,12 +145,12 @@ static void init_prvkey()
     
     i = 0;
     i2 = 0;
-    while (i < strlen(prvkey_str))
+    while (i < strlen(PRVKEY_DEFAULT_STR))
     {
-        tmp = char2num[(int)prvkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)prvkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)prvkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)prvkey_str[i++]];
+        tmp = char2num[(int)PRVKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PRVKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PRVKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PRVKEY_DEFAULT_STR[i++]];
         keytmp2[i2++] = (tmp >> 16) & 0xff;
         keytmp2[i2++] = (tmp >> 8) & 0xff;
         keytmp2[i2++] = tmp & 0xff;
@@ -166,12 +160,12 @@ static void init_prvkey()
 
     i = 0;
     i2 = 0;
-    while (i < strlen(pubkey_str))
+    while (i < strlen(PUBKEY_DEFAULT_STR))
     {
-        tmp = char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
+        tmp = char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
+        tmp <<= 6; tmp |= char2num[(int)PUBKEY_DEFAULT_STR[i++]];
         keytmp[i2++] = (tmp >> 16) & 0xff;
         keytmp[i2++] = (tmp >> 8) & 0xff;
         keytmp[i2++] = tmp & 0xff;

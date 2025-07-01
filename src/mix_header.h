@@ -1,12 +1,4 @@
-/* 
- * File:   mix_header.h
- * Author: fbsagr
- *
- * Created on June 5, 2014, 4:37 PM
- */
-
-#ifndef MIX_HEADER_H
-#define	MIX_HEADER_H
+#pragma once
 
 #include "mixid.h"
 
@@ -133,5 +125,3 @@ private:
     bool writeUnEncrypted(std::fstream &fh);
     //void setGame(GameKind game); //{ m_game_type = game; }
 };
-
-#endif	/* MIX_HEADER_H */
