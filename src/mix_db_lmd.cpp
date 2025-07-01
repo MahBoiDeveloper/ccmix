@@ -109,7 +109,7 @@ bool MixLMD::deleteName(int32_t id)
 {
     t_id_iter rv = m_name_map.find(id);
     if(rv == m_name_map.end()){
-        std::cout << "Name not found in local DB." << std::endl;
+        std::wcout << "Name not found in local DB." << std::endl;
         return false;
     }
     

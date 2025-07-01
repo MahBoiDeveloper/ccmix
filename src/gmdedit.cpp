@@ -21,7 +21,7 @@ std::vector<t_namepair> names;
     std::string choice = "";
     while(choice == ""){
         
-        std::cout << "Which game do you want to add entries for?\n"
+        std::wcout << "Which game do you want to add entries for?\n"
                   << "td|ra|ts|ra2|quit\n"
                   << ">:";
         std::cin >> choice;
@@ -51,14 +51,14 @@ bool addEntry()
     std::string input;
     t_namepair name;
     while(another){
-        std::cout << "Filename >: ";
+        std::wcout << "Filename >: ";
         std::cin >> input;
         name.first = tolower(input);
-        std::cout << "Description >: ";
+        std::wcout << "Description >: ";
         std::cin >> input;
         name.second = tolower(input);
         names.push_back(name);
-        std::cout << "Add Another?(YES|no) >: ";
+        std::wcout << "Add Another?(YES|no) >: ";
         std::cin >> input;
         if(tolower(input) == "no" | tolower(input) == "n"){
             another = false;
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     
     if(argc < 4){
         //menu();
-        std::cout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
+        std::wcout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
         return 1;
     } else {
         game = TD;
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
             t_namepair entry;
             std::getline(ifh, entry.first, ',');
             std::getline(ifh, entry.second);
-            std::cout << entry.first << " - " << entry.second << "\n";
+            std::wcout << entry.first << " - " << entry.second << "\n";
             if(entry.first != ""){
                 names.push_back(entry);
             }

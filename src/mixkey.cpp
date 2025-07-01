@@ -1,12 +1,12 @@
 #include "mix_dexoder.h"
-#include "cryptopp/rsa.h"
-#include "cryptopp/blowfish.h"
-#include "cryptopp/base64.h"
-#include "cryptopp/integer.h"
-#include "cryptopp/hex.h"
-#include "cryptopp/osrng.h"
-#include "cryptopp/modes.h"
-#include "cryptopp/secblock.h"
+#include "cryptolib/rsa.h"
+#include "cryptolib/blowfish.h"
+#include "cryptolib/base64.h"
+#include "cryptolib/integer.h"
+#include "cryptolib/hex.h"
+#include "cryptolib/osrng.h"
+#include "cryptolib/modes.h"
+#include "cryptolib/secblock.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -82,26 +82,26 @@ int main(int argc, char* argv[])
     for(int i = 0; i < 40; i++) {
         printf("%02x", keybuf[i]);
     }
-    std::cout << "\n\n";
+    std::wcout << "\n\n";
      
     d.Encode(keybuf, 40);
     for(int i = 0; i < 40; i++) {
         printf("%02x", keybuf[i]);
     }
-    std::cout << "\n\n";
+    std::wcout << "\n\n";
     */
     
-    //std::cout << std::dec << n.BitCount() << "\n";
-    //std::cout << std::hex << n << "\n";
-    //std::cout << std::dec << e.BitCount() << "\n";
-    //std::cout << std::hex << e << "\n\n";
-    //std::cout << std::dec << d.BitCount() << "\n";
-    //std::cout << std::hex << d << "\n\n";
+    //std::wcout << std::dec << n.BitCount() << "\n";
+    //std::wcout << std::hex << n << "\n";
+    //std::wcout << std::dec << e.BitCount() << "\n";
+    //std::wcout << std::hex << e << "\n\n";
+    //std::wcout << std::dec << d.BitCount() << "\n";
+    //std::wcout << std::hex << d << "\n\n";
     
-    std::cout << "XCC code blowfish key, encoded part 1 and 2:\n";
-    std::cout << std::hex << bfshkeyint << "\n";
-    std::cout << std::hex << keyblk1 << "\n";
-    std::cout << std::hex << keyblk2 << "\n\n";
+    std::wcout << "XCC code blowfish key, encoded part 1 and 2:\n";
+    std::wcout << std::hex << bfshkeyint << "\n";
+    std::wcout << std::hex << keyblk1 << "\n";
+    std::wcout << std::hex << keyblk2 << "\n\n";
     
     AutoSeededRandomPool rng;
     
@@ -113,30 +113,30 @@ int main(int argc, char* argv[])
     
     std::stringstream str;
     
-    //std::cout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
+    //std::wcout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
     Integer dec1 = rsaprvKey.ApplyFunction(keyblk1);
-    //std::cout << std::hex << dec1 << "\n";
+    //std::wcout << std::hex << dec1 << "\n";
     
-    //std::cout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
+    //std::wcout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
     Integer dec2 = rsaprvKey.ApplyFunction(keyblk2);
-    //std::cout << std::hex << dec2 << "\n\n";
+    //std::wcout << std::hex << dec2 << "\n\n";
     
     Integer blowfishkey = (dec1 << 312) + dec2;
-    //std::cout << std::dec << blowfishkey.BitCount() << "\n";
-    //std::cout << std::hex << blowfishkey << "\n";
+    //std::wcout << std::dec << blowfishkey.BitCount() << "\n";
+    //std::wcout << std::hex << blowfishkey << "\n";
     
-    std::cout << "RSA blowfish key, decoded part1 and 2:\n";
-    std::cout << std::hex << blowfishkey << "\n";
-    std::cout << std::hex << dec1 << "\n";
-    std::cout << std::hex << dec2 << "\n\n";
+    std::wcout << "RSA blowfish key, decoded part1 and 2:\n";
+    std::wcout << std::hex << blowfishkey << "\n";
+    std::wcout << std::hex << dec1 << "\n";
+    std::wcout << std::hex << dec2 << "\n\n";
     
     BintToBfish(blowfishkey, nukey);
     //Integer testkey(nukey, 56);
-    //std::cout << std::hex << testkey << "\n";
+    //std::wcout << std::hex << testkey << "\n";
     
     ECB_Mode< Blowfish >::Decryption bfdecrypt;
     bfdecrypt.SetKey(nukey, 56);
     ifh.read((char*)bfbuf, 8);
     bfdecrypt.ProcessString(bfbuf, 8);
-    //std::cout << "Decrypted num of files: " << std::dec << *(int16_t*)bfbuf << "\n";
+    //std::wcout << "Decrypted num of files: " << std::dec << *(int16_t*)bfbuf << "\n";
 }

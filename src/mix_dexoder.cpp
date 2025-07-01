@@ -467,12 +467,12 @@ static void process_predata(const uint8_t* pre, uint32_t pre_len, uint8_t *buf)
         memmove(n2, pre, a + 1);
         
         //CryptoPP::Integer blk((uint8_t*)n2, a + 1);
-        //std::cout << "pre-enc block\n" << std::hex << blk << "\n";
+        //std::wcout << "pre-enc block\n" << std::hex << blk << "\n";
         
         calc_a_key(n3, n2, pubkey.key2, pubkey.key1, 64);
         
         //CryptoPP::Integer blk2((uint8_t*)n3, a);
-        //std::cout << "post-enc block\n" << std::hex << blk2 << "\n\n";
+        //std::wcout << "post-enc block\n" << std::hex << blk2 << "\n\n";
         
         memmove(buf, n3, a);
 
@@ -492,8 +492,8 @@ void get_blowfish_key(const uint8_t* s, uint8_t* d)
     }
     
     //CryptoPP::Integer pubmod((uint8_t*)pubkey.key1, 40), pubexp((uint8_t*)pubkey.key2, 40);
-    //std::cout << std::hex << pubmod << "\n";
-    //std::cout << std::hex << pubexp << "\n\n";
+    //std::wcout << std::hex << pubmod << "\n";
+    //std::wcout << std::hex << pubexp << "\n\n";
     
     uint8_t key[256];
     process_predata(s, len_predata(), key);

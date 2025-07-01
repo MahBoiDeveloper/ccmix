@@ -42,7 +42,7 @@ void MixGameDB::writeDB(std::fstream& fh)
     //first record how many entries we have for this db.
     
     if(!fh.is_open()){
-        std::cout << "File not open to write DB\n";
+        std::wcout << "File not open to write DB\n";
     }
     fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
