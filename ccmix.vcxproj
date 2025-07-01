@@ -124,7 +124,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src/ccmix.cpp" />
+    <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src/mixid.cpp" />
     <ClCompile Include="src/mixid.h" />
     <ClCompile Include="src/mix_db_gamedb.cpp" />

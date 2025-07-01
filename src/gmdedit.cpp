@@ -13,69 +13,6 @@ typedef std::pair<std::string, std::string> t_namepair;
 GameKind game;
 std::vector<t_namepair> names;
 
-/*
- * 
- */
-/*bool gameChoice()
-{
-    std::string choice = "";
-    while(choice == ""){
-        
-        std::wcout << "Which game do you want to add entries for?\n"
-                  << "td|ra|ts|ra2|quit\n"
-                  << ">:";
-        std::cin >> choice;
-        if(choice == "td"){
-            game = TD;
-            return false;
-        } else if(choice == "ra") {
-            game = RA;
-            return false;
-        } else if(choice == "ts") {
-            game = TS;
-            return false;
-        } else if(choice == "ra2") {
-            game = RA2;
-            return false;
-        } else if(choice == "quit") {
-            return true;
-        } else {
-            choice = "";
-        }
-    }
-}
-
-bool addEntry()
-{
-    bool another = true;
-    std::string input;
-    t_namepair name;
-    while(another){
-        std::wcout << "Filename >: ";
-        std::cin >> input;
-        name.first = tolower(input);
-        std::wcout << "Description >: ";
-        std::cin >> input;
-        name.second = tolower(input);
-        names.push_back(name);
-        std::wcout << "Add Another?(YES|no) >: ";
-        std::cin >> input;
-        if(tolower(input) == "no" | tolower(input) == "n"){
-            another = false;
-        }
-    }
-}
-
-void menu()
-{
-    bool quit = false
-    game = TD;
-    
-    while(!quit){
-        quit = gameChoice();
-    } 
-}*/
-
 int GmeditMain(int argc, char** argv) {
     
     GlobalMixDataBase gmd;
@@ -92,7 +29,7 @@ int GmeditMain(int argc, char** argv) {
         std::wcout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
         return 1;
     } else {
-        game = TD;
+        game = GameKind::TD;
         
         ifh.open(argv[2], std::ios_base::in);
 

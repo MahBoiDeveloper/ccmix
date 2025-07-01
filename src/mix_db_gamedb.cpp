@@ -4,9 +4,7 @@
 
 using namespace std;
 
-MixGameDB::MixGameDB(GameKind game) :
-m_size(0),
-m_game_type(game)
+MixGameDB::MixGameDB(GameKind game) : m_size(0), m_game_type(game)
 {
 }
 

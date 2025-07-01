@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <format>
 
 #include <windows.h>
 #include <tchar.h>
@@ -127,7 +128,7 @@ void ShowHelp(TCHAR** argv)
 }
 
 //quick inline to respond to more than one command being specified.
-inline void NoMultiMode(TCHAR** argv)
+void NoMultiMode(TCHAR** argv)
 {
     std::cout << "You cannot specify more than one mode at once." << std::endl;
     ShowUsage(argv);
@@ -216,18 +217,6 @@ std::string GetHomeDir()
     else {
         rv += std::string(tmp);
     }
-
-#else
-
-    tmp = getenv("HOME");
-    if (tmp == NULL) {
-        rv = string(getpwuid(getuid())->pw_dir);
-    }
-    else {
-        rv = string(tmp);
-    }
-
-#endif
     return rv;
 }
 
@@ -252,19 +241,20 @@ CSimpleOpt::SOption g_rgOptions[] = {
     SO_END_OF_OPTIONS
 };
 
-int _tmain(int argc, TCHAR** argv)
+void main(int argc, TCHAR** argv)
 {
-    if (argc <= 1) {
+    if (argc <= 1)
+    {
         ShowUsage(argv);
-        return 0;
+        return;
     }
 
     //initialise some variables used later
-    uint32_t file_id = 0;
+    uint32_t fileId = 0;
     std::wstring file = L"";
     std::string dir = "";
-    std::string input_mixfile = "";
-    const std::wstring program_path(argv[0]);
+    std::string inpuMixFile = "";
+    const std::wstring programPath(argv[0]);
     std::string user_home_dir = GetHomeDir();
     GameKind game = GameKind::TD;
     ExecutionMode mode = ExecutionMode::NONE;
@@ -278,169 +268,166 @@ int _tmain(int argc, TCHAR** argv)
     CSimpleOpt args(argc, argv, g_rgOptions);
 
     //Process the command line args and set the variables
-    while (args.Next()) {
-        if (args.LastError() != SO_SUCCESS) {
-            _tprintf(_T("Invalid argument: %s\n"), args.OptionText());
+    while (args.Next()) 
+    {
+        if (args.LastError() != SO_SUCCESS) 
+        {
+            std::wcout << L"Invalid argument: %s" << std::endl << args.OptionText();
             ShowUsage(argv);
-            return 1;
         }
 
-        switch (args.OptionId()) {
-        case OPT_HELP:
+        switch (args.OptionId())
         {
-            ShowHelp(argv);
-            return 0;
-        }
-        case OPT_FILES:
-        {
-            if (args.OptionArg() != NULL) {
-                file = std::wstring(args.OptionArg());
-            }
-            else {
-                _tprintf(_T("--filename option requires a filename.\n"));
-                return 1;
-            }
-            break;
-        }
-        case OPT_ID:
-        {
-            if (args.OptionArg() != NULL)
+            case OPT_HELP:
             {
-                file_id = StringToID(std::string(args.OptionArg()));
+                ShowHelp(argv);
             }
-            else
+            case OPT_FILES:
             {
-                _tprintf(_T("--id option requires a file id.\n"));
-                return 1;
+                if (args.OptionArg() != NULL)
+                    file = std::wstring(args.OptionArg());
+                else 
+                    std::cout << "--filename option requires a filename." << std::endl;
+                
+                break;
             }
-            break;
-        }
-        case OPT_MIX:
-        {
-            if (args.OptionArg() != NULL) 
+            case OPT_ID:
             {
-                input_mixfile = std::string(args.OptionArg());
-                std::wcout << "Operating on " << input_mixfile.c_str() << std::endl;
+                if (args.OptionArg() != NULL)
+                {
+                    fileId = StringToID(std::string(args.OptionArg()));
+                }
+                else
+                {
+                    _tprintf(_T("--id option requires a file id.\n"));
+                    return 1;
+                }
+                break;
             }
-            else
+            case OPT_MIX:
             {
-                _tprintf(_T("--mix option requires a mix file.\n"));
-                return 1;
+                if (args.OptionArg() != NULL) 
+                {
+                    inpuMixFile = std::string(args.OptionArg());
+                    std::wcout << "Operating on " << inpuMixFile.c_str() << std::endl;
+                }
+                else
+                {
+                    std::cout << "--mix option requires a mix file." << std::endl;
+                }
+                break;
             }
-            break;
-        }
-        case OPT_DIR:
-        {
-            if (args.OptionArg() != NULL)
+            case OPT_DIR:
             {
-                dir = std::string(args.OptionArg());
+                if (args.OptionArg() != NULL)
+                {
+                    dir = std::string(args.OptionArg());
+                }
+                else
+                {
+                    std::cout << "--directory option requires a directory name." << std::endl;
+                }
+                break;
             }
-            else
+            case OPT_LMD:
             {
-                _tprintf(_T("--directory option requires a directory name.\n"));
-                return 1;
+                local_db = true;
+                break;
             }
-            break;
-        }
-        case OPT_LMD:
-        {
-            local_db = true;
-            break;
-        }
-        case OPT_ENC:
-        {
-            encrypt = true;
-            break;
-        }
-        case OPT_CHK:
-        {
-            checksum = true;
-            break;
-        }
-        case OPT_GAME:
-        {
-            std::string gt = std::string(args.OptionArg().c_str());
-            if (gt == games[0])
-                game = GameKind::TD;
-            else if (gt == games[1])
-                game = GameKind::RA;
-            else if (gt == games[2])
-                game = GameKind::TS;
-            else if (gt == games[3])
-                game = GameKind::RA2;
-            else
-                std::cout << "--game is either td, ra, ts or ra2." << std::endl;
+            case OPT_ENC:
+            {
+                encrypt = true;
+                break;
+            }
+            case OPT_CHK:
+            {
+                checksum = true;
+                break;
+            }
+            case OPT_GAME:
+            {
+                std::string gt = std::string(args.OptionArg().c_str());
+                if (gt == games[0])
+                    game = GameKind::TD;
+                else if (gt == games[1])
+                    game = GameKind::RA;
+                else if (gt == games[2])
+                    game = GameKind::TS;
+                else if (gt == games[3])
+                    game = GameKind::RA2;
+                else
+                    std::cout << "--game is either td, ra, ts or ra2." << std::endl;
 
-            break;
-        }
-        case OPT_CREATE:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = ExecutionMode::CREATE;
-            break;
-        }
-        case OPT_EXTRACT:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = EXTRACT;
-            break;
-        }
-        case OPT_LIST:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = ExecutionMode::LIST;
-            break;
-        }
-        case OPT_INFO:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = ExecutionMode::INFO;
-            break;
-        }
-        case OPT_ADD:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = ExecutionMode::ADD;
-            break;
-        }
-        case OPT_REM:
-        {
-            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
-            mode = ExecutionMode::REMOVE;
-            break;
-        }
-        default:
-        {
-            if (args.OptionArg()) {
-                _tprintf(_T("option: %2d, text: '%s', arg: '%s'\n"),
-                    args.OptionId(), args.OptionText(), args.OptionArg());
+                break;
             }
-            else {
-                _tprintf(_T("option: %2d, text: '%s'\n"),
-                    args.OptionId(), args.OptionText());
+            case OPT_CREATE:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::CREATE;
+                break;
             }
-            break;
-        }
+            case OPT_EXTRACT:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::EXTRACT;
+                break;
+            }
+            case OPT_LIST:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::LIST;
+                break;
+            }
+            case OPT_INFO:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::INFO;
+                break;
+            }
+            case OPT_ADD:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::ADD;
+                break;
+            }
+            case OPT_REM:
+            {
+                if (mode != ExecutionMode::NONE)
+                    NoMultiMode(argv);
+                mode = ExecutionMode::REMOVE;
+                break;
+            }
+            default:
+            {
+                if (args.OptionArg())
+                    std::cout << std::format("option: {0}, text: '{1}', arg: '{2}'", args.OptionId(), args.OptionText(), args.OptionArg()) << std::endl;
+                else
+                    std::cout << std::format("option: {0}, text: '{1}'", args.OptionId(), args.OptionText()) << std::endl;
+                break;
+            }
         }
     }
 
     //check if we got told a mix file to do something with.
-    if (input_mixfile == "") {
-        std::wcout << "You must specify --mix MIXFILE to operate on." << std::endl;
-    }
+    if (inpuMixFile == "")
+        std::cout << "You must specify --mix MIXFILE to operate on." << std::endl;
 
     switch (mode) {
     case ExecutionMode::EXTRACT:
     {
-        MixFile in_file(FindGMD(std::filesystem::current_path()),
-            user_home_dir), game);
+        MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(input_mixfile)) {
+        if (!in_file.open(inpuMixFile)) {
             std::wcout << "Cannot open specified mix file" << std::endl;
             return 1;
         }
 
-        if (!Extraction(in_file, file, dir, file_id)) {
+        if (!Extraction(in_file, file, dir, fileId)) {
             return 1;
         }
         return 0;
@@ -451,7 +438,7 @@ int _tmain(int argc, TCHAR** argv)
         MixFile out_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
-        if (!out_file.createMix(input_mixfile, dir, local_db,
+        if (!out_file.createMix(inpuMixFile, dir, local_db,
             encrypt, checksum, FindKeySource(std::filesystem::current_path())))) {
             std::wcout << "Failed to create new mix file" << std::endl;
             return 1;
@@ -465,12 +452,10 @@ int _tmain(int argc, TCHAR** argv)
         MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
-        if (!in_file.open(input_mixfile)) {
+        if (!in_file.open(inpuMixFile))
             std::wcout << "Cannot open specified mix file" << std::endl;
-            return 1;
-        }
 
-        if (file == "") {
+        if (file == L"") {
             if (checksum) {
                 in_file.addCheckSum();
             }
@@ -479,64 +464,46 @@ int _tmain(int argc, TCHAR** argv)
             in_file.addFile(file);
         }
 
-        return 0;
         break;
     }
     case ExecutionMode::REMOVE:
     {
-        MixFile in_file(FindGMD(std::filesystem::current_path()),
-            user_home_dir), game);
+        MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(input_mixfile)) {
+        if (!in_file.open(inpuMixFile))
             std::wcout << "Cannot open specified mix file" << std::endl;
-            return 1;
-        }
 
-        if (file == L"") {
-            if (checksum) {
+        if (file == L"")
+            if (checksum) 
                 in_file.removeCheckSum();
-            }
-        }
-        else {
+        else
             in_file.removeFile(file);
-        }
 
-        return 0;
         break;
     }
     case ExecutionMode::LIST:
     {
         MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(input_mixfile)) {
+        if (!in_file.open(inpuMixFile))
             std::wcout << "Cannot open specified mix file" << std::endl;
-            return 1;
-        }
 
         in_file.printFileList();
-        return 0;
         break;
     }
     case ExecutionMode::INFO:
     {
-        MixFile in_file(FindGMD(std::filesystem::current_path()),
-            user_home_dir), game);
+        MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(input_mixfile)) 
-        {
+        if (!in_file.open(inpuMixFile)) 
             std::wcout << "Cannot open specified mix file" << std::endl;
-            return 1;
-        }
 
         in_file.printInfo();
-        return 0;
         break;
     }
     default:
     {
         std::wcout << "command switch default, this shouldn't happen!!" << std::endl;
-        return 1;
+        break;
     }
-    
-    return 0;
 }
