@@ -17,13 +17,23 @@
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
        OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC, OPT_CHK, OPT_INFO, OPT_ADD, 
        OPT_REM};
-typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
+
+enum class ExecutionMode 
+{ 
+    NONE, 
+    EXTRACT, 
+    CREATE, 
+    ADD, 
+    REMOVE, 
+    LIST, 
+    INFO
+};
 
 const std::string games[] = {"td", "ra", "ts", "ra2"};
 
 // Search and test a few locations for a global mix database
 // TODO copy gmd if found but not in a home dir config.
-std::string findGMD(const std::string program_dir, const std::string home_dir)
+std::string FindGMD(const std::string program_dir, const std::string home_dir)
 {
     std::string gmd_loc = "global mix database.dat";
     std::vector<std::string> gmd_dir(3);
@@ -42,7 +52,7 @@ std::string findGMD(const std::string program_dir, const std::string home_dir)
     return gmd_loc;
 }
 
-std::string findKeySource(const std::string program_dir)
+std::string FindKeySource(const std::string program_dir)
 {
     std::string key_source_loc = "key.source";
     std::string gmd_test = program_dir + DIR_SEPARATOR + key_source_loc;
@@ -119,7 +129,7 @@ void ShowHelp(TCHAR** argv)
 //quick inline to respond to more than one command being specified.
 inline void NoMultiMode(TCHAR** argv)
 {
-    _tprintf(_T("You cannot specify more than one mode at once.\n"));
+    std::cout << "You cannot specify more than one mode at once." << std::endl;
     ShowUsage(argv);
 }
 
@@ -256,8 +266,8 @@ int _tmain(int argc, TCHAR** argv)
     std::string input_mixfile = "";
     const std::wstring program_path(argv[0]);
     std::string user_home_dir = GetHomeDir();
-    GameKind game = TD;
-    t_mixmode mode = NONE;
+    GameKind game = GameKind::TD;
+    ExecutionMode mode = ExecutionMode::NONE;
     bool local_db = false;
     bool encrypt = false;
     bool checksum = false;
@@ -351,13 +361,13 @@ int _tmain(int argc, TCHAR** argv)
         {
             std::string gt = std::string(args.OptionArg().c_str());
             if (gt == games[0])
-                game = TD;
+                game = GameKind::TD;
             else if (gt == games[1])
-                game = RA;
+                game = GameKind::RA;
             else if (gt == games[2])
-                game = TS;
+                game = GameKind::TS;
             else if (gt == games[3])
-                game = RA2;
+                game = GameKind::RA2;
             else
                 std::cout << "--game is either td, ra, ts or ra2." << std::endl;
 
@@ -365,38 +375,38 @@ int _tmain(int argc, TCHAR** argv)
         }
         case OPT_CREATE:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = CREATE;
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
+            mode = ExecutionMode::CREATE;
             break;
         }
         case OPT_EXTRACT:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
             mode = EXTRACT;
             break;
         }
         case OPT_LIST:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = LIST;
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
+            mode = ExecutionMode::LIST;
             break;
         }
         case OPT_INFO:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = INFO;
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
+            mode = ExecutionMode::INFO;
             break;
         }
         case OPT_ADD:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = ADD;
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
+            mode = ExecutionMode::ADD;
             break;
         }
         case OPT_REM:
         {
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = REMOVE;
+            if (mode != ExecutionMode::NONE) { NoMultiMode(argv); return 1; }
+            mode = ExecutionMode::REMOVE;
             break;
         }
         default:
@@ -420,9 +430,9 @@ int _tmain(int argc, TCHAR** argv)
     }
 
     switch (mode) {
-    case EXTRACT:
+    case ExecutionMode::EXTRACT:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()),
+        MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) {
@@ -436,13 +446,13 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
         break;
     }
-    case CREATE:
+    case ExecutionMode::CREATE:
     {
-        MixFile out_file(findGMD(std::filesystem::current_path()),
+        MixFile out_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
         if (!out_file.createMix(input_mixfile, dir, local_db,
-            encrypt, checksum, findKeySource(std::filesystem::current_path())))) {
+            encrypt, checksum, FindKeySource(std::filesystem::current_path())))) {
             std::wcout << "Failed to create new mix file" << std::endl;
             return 1;
         }
@@ -450,9 +460,9 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
         break;
     }
-    case ADD:
+    case ExecutionMode::ADD:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()),
+        MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) {
@@ -472,9 +482,9 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
         break;
     }
-    case REMOVE:
+    case ExecutionMode::REMOVE:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()),
+        MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) {
@@ -494,9 +504,9 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
         break;
     }
-    case LIST:
+    case ExecutionMode::LIST:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()), user_home_dir), game);
+        MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) {
             std::wcout << "Cannot open specified mix file" << std::endl;
@@ -507,9 +517,9 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
         break;
     }
-    case INFO:
+    case ExecutionMode::INFO:
     {
-        MixFile in_file(findGMD(std::filesystem::current_path()),
+        MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
         if (!in_file.open(input_mixfile)) 

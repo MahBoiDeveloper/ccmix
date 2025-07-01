@@ -11,8 +11,8 @@
 #include <iostream>
 #include <fstream>
 
-extern const char* pubkey_str;
-extern const char* prvkey_str;
+extern const char* PUBKEY_DEFAULT_STR;
+extern const char* PRVKEY_DEFAULT_STR;
 const size_t ENC_KEY_LEN = 56;
 
 using namespace CryptoPP;
@@ -62,10 +62,10 @@ int main(int argc, char* argv[])
     std::string pubkey;
     std::string prvkey;
     Base64Decoder decode;
-    decode.Put(reinterpret_cast<const byte*>(pubkey_str), ENC_KEY_LEN);
+    decode.Put(reinterpret_cast<const byte*>(PUBKEY_DEFAULT_STR), ENC_KEY_LEN);
     pubkey.resize(decode.MaxRetrievable());
     decode.Get((byte*)pubkey.data(), pubkey.size());
-    decode.Put(reinterpret_cast<const byte*>(prvkey_str), ENC_KEY_LEN);
+    decode.Put(reinterpret_cast<const byte*>(PRVKEY_DEFAULT_STR), ENC_KEY_LEN);
     prvkey.resize(decode.MaxRetrievable());
     decode.Get((byte*)prvkey.data(), prvkey.size());
     

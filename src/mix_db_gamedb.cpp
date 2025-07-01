@@ -87,6 +87,6 @@ bool MixGameDB::addName(std::string name, std::string description)
 
 bool MixGameDB::deleteName(std::string name)
 {
-    cout << name << " deleteName not implemented yet" << endl;
+    cout << name << " DeleteName not implemented yet" << endl;
     return false;
 }

@@ -6,19 +6,20 @@
 #include <map>
 
 // Callers job to ensure file handles are valid and in usable state.
-class MixGMD
+class GlobalMixDataBase
 {
-public:
-    MixGMD();
-    void readDB(std::fstream &fh);
-    void writeDB(std::fstream &fh);
-    std::string getName(GameKind game, int32_t id);
-    bool addName(GameKind game, std::string name, std::string desc);
-    bool deleteName(GameKind game, std::string name);
-private:
-    MixGameDB m_td_list;
-    MixGameDB m_ra_list;
-    MixGameDB m_ts_list;
-    MixGameDB m_ra2_list;
-    std::vector<MixGameDB*> m_db_array;
+private: // Data
+    MixGameDB TDList;
+    MixGameDB RAList;
+    MixGameDB TSList;
+    MixGameDB RA2List;
+    std::vector<MixGameDB*> vDataBase;
+
+public: // Methods
+    GlobalMixDataBase();
+    void ReadDB(std::fstream &fh);
+    void WriteDB(std::fstream &fh);
+    std::string GetName(GameKind game, int32_t id);
+    bool AddName(GameKind game, std::string name, std::string desc);
+    bool DeleteName(GameKind game, std::string name);
 };

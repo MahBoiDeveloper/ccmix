@@ -1,5 +1,4 @@
-#ifndef MIX_FILE_H
-#define	MIX_FILE_H
+#pragma once
 #include "mix_db_gmd.h"
 #include "mix_db_lmd.h"
 #include "mix_header.h"
@@ -36,8 +35,7 @@
  */
 class MixFile {
 public:
-    MixFile(const std::string gmd = "global mix database.dat" , 
-            GameKind openGame = TD);
+    MixFile(const std::string gmd = "global mix database.dat" , GameKind openGame = GameKind.TD);
     virtual ~MixFile();
     /**
      * @brief open mix archive
@@ -158,7 +156,7 @@ protected:
     bool encrypt();
     bool overWriteOld(std::string temp);
     MixHeader m_header; // mix file header
-    MixGMD m_global_db;
+    GlobalMixDataBase m_global_db;
     MixLMD m_local_db;
     t_skip_map m_skip;
     bool m_has_lmd;
@@ -166,5 +164,3 @@ protected:
     std::fstream fh; // file handler
     uint8_t m_checksum[20];
 };
-
-#endif	/* MIX_FILE_H */

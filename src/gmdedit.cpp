@@ -78,13 +78,13 @@ void menu()
 
 int GmeditMain(int argc, char** argv) {
     
-    MixGMD gmd;
+    GlobalMixDataBase gmd;
     std::fstream ifh;
     std::fstream ofh;
     std::vector<t_namepair> names;
     
     ifh.open(argv[1], std::ios_base::in|std::ios_base::binary);
-    gmd.readDB(ifh);
+    gmd.ReadDB(ifh);
     ifh.close();
     
     if(argc < 4){
@@ -108,11 +108,11 @@ int GmeditMain(int argc, char** argv) {
     }
 
     for(unsigned int i = 0; i < names.size(); i++) {
-        gmd.addName(game, names[i].first, names[i].second);
+        gmd.AddName(game, names[i].first, names[i].second);
     }
     
     ofh.open(argv[3], std::ios_base::out|std::ios_base::binary);
-    gmd.writeDB(ofh);
+    gmd.WriteDB(ofh);
     
     return 0;
 }

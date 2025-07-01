@@ -1,19 +1,19 @@
 #include "mix_db_gmd.h"
 #include <iostream>
 
-MixGMD::MixGMD() :
-m_td_list(TD),
-m_ra_list(RA),
-m_ts_list(TS),
-m_ra2_list(RA2)
+GlobalMixDataBase::GlobalMixDataBase() :
+TDList(TD),
+RAList(RA),
+TSList(TS),
+RA2List(RA2)
 {
-    m_db_array.push_back(&m_td_list);
-    m_db_array.push_back(&m_ra_list);
-    m_db_array.push_back(&m_ts_list);
-    m_db_array.push_back(&m_ra2_list);
+    vDataBase.push_back(&TDList);
+    vDataBase.push_back(&RAList);
+    vDataBase.push_back(&TSList);
+    vDataBase.push_back(&RA2List);
 }
 
-void MixGMD::readDB(std::fstream &fh)
+void GlobalMixDataBase::ReadDB(std::fstream &fh)
 {
     uint32_t begin, end, size, offset;
     
@@ -33,63 +33,63 @@ void MixGMD::readDB(std::fstream &fh)
     fh.read(&data.at(0), size);
     
     // read file from buffer into respective dbs
-    for (uint32_t i = 0; i < m_db_array.size(); i++){
-        m_db_array[i]->readDB(&data.at(0), offset);
-        offset += m_db_array[i]->getSize();
+    for (uint32_t i = 0; i < vDataBase.size(); i++){
+        vDataBase[i]->readDB(&data.at(0), offset);
+        offset += vDataBase[i]->getSize();
     }
 }
 
-void MixGMD::writeDB(std::fstream& fh)
+void GlobalMixDataBase::WriteDB(std::fstream& fh)
 {
-    for (unsigned int i = 0; i < m_db_array.size(); i++){
-        if (!m_db_array[i]) continue;
-        m_db_array[i]->writeDB(fh);
+    for (unsigned int i = 0; i < vDataBase.size(); i++){
+        if (!vDataBase[i]) continue;
+        vDataBase[i]->writeDB(fh);
     }
 }
 
-std::string MixGMD::getName(GameKind game, int32_t id)
+std::string GlobalMixDataBase::GetName(GameKind game, int32_t id)
 {
     switch(game){
         case TD:
-            return m_td_list.getName(id);
+            return TDList.getName(id);
         case RA:
-            return m_ra_list.getName(id);
+            return RAList.getName(id);
         case TS:
-            return m_ts_list.getName(id);
+            return TSList.getName(id);
         case RA2:
-            return m_ra2_list.getName(id);
+            return RA2List.getName(id);
         default:
             return "";
     }
 }
 
-bool MixGMD::addName(GameKind game, std::string name, std::string desc = "")
+bool GlobalMixDataBase::AddName(GameKind game, std::string name, std::string desc = "")
 {
     switch(game){
         case TD:
-            return m_td_list.addName(name, desc);
+            return TDList.addName(name, desc);
         case RA:
-            return m_ra_list.addName(name, desc);
+            return RAList.addName(name, desc);
         case TS:
-            return m_ts_list.addName(name, desc);
+            return TSList.addName(name, desc);
         case RA2:
-            return m_ra2_list.addName(name, desc);
+            return RA2List.addName(name, desc);
         default:
             return false;
     }
 }
 
-bool MixGMD::deleteName(GameKind game, std::string name)
+bool GlobalMixDataBase::DeleteName(GameKind game, std::string name)
 {
     switch(game){
         case TD:
-            return m_td_list.deleteName(name);
+            return TDList.deleteName(name);
         case RA:
-            return m_ra_list.deleteName(name);
+            return RAList.deleteName(name);
         case TS:
-            return m_ts_list.deleteName(name);
+            return TSList.deleteName(name);
         case RA2:
-            return m_ra2_list.deleteName(name);
+            return RA2List.deleteName(name);
         default:
             return false;
     }

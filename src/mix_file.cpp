@@ -54,7 +54,7 @@ m_local_db(game)
     fstream gmdfile;
     gmdfile.open(gmd.c_str(), fstream::in | fstream::binary);
     if(gmdfile.is_open()){
-        m_global_db.readDB(gmdfile);
+        m_global_db.ReadDB(gmdfile);
         gmdfile.close();
     } else {
         cout << "Could not open global mix database.dat" << endl;
@@ -126,7 +126,7 @@ bool MixFile::extractAll(string outPath)
         fname = m_local_db.getName(it->first);
         
         if(fname.substr(0, 4) == "[id]") {
-            fname = m_global_db.getName(m_header.getGame(), it->first);
+            fname = m_global_db.GetName(m_header.getGame(), it->first);
         }
         
         if (it->second.size <= m_header.getBodySize()) {
@@ -597,7 +597,7 @@ void MixFile::printFileList()
         //try to get a filename, if lmd doesn't have it try gmd.
         fname = m_local_db.getName(it->first);
         if(fname.substr(0, 4) == "[id]") {
-            fname = m_global_db.getName(m_header.getGame(), it->first);
+            fname = m_global_db.GetName(m_header.getGame(), it->first);
         }
         
         cout << setw(24) << fname << setw(10) << MixID::idStr(it->first) <<
