@@ -18,10 +18,10 @@
     <ClCompile Include="src\Main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src/mixid.cpp">
+    <ClCompile Include="src\MixID.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src/mixid.h">
+    <ClCompile Include="src\MixID.h">
       <Filter>Файлы заголовков</Filter>
     </ClCompile>
     <ClCompile Include="src/mix_db_gamedb.cpp">

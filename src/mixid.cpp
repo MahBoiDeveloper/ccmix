@@ -60,23 +60,25 @@ namespace MixID
         }
     }
 
-    int32_t idGen(GameKind game, std::string fname) 
+    int32_t GenerateID(GameKind game, std::string fname) 
     {
         // If the filename starts [id] treat next 8 chars as an id to convert to int
-        if(isIdName(fname))
-            return strId(fname.substr(4, 8));
+        if(IsIDExists(fname))
+            return FromHexString(fname.substr(4, 8));
 
         std::transform(fname.begin(), fname.end(), fname.begin(),
                 (int(*)(int)) toupper); // convert to uppercase
 
-        if (game <= RA) // for TD and RA
+        if (game == GameKind::RA || game == GameKind::TD) // for TD and RA
         { 
             int i = 0;
             uint32_t id = 0;
             int l = fname.length(); // length of the filename
-            while (i < l) {
+            while (i < l)
+            {
                 uint32_t a = 0;
-                for (int j = 0; j < 4; j++) {
+                for (int j = 0; j < 4; j++) 
+                {
                     a >>= 8;
                     if (i < l)
                         a += static_cast<uint32_t>(fname[i]) << 24;
@@ -90,7 +92,8 @@ namespace MixID
         { 
             const int l = fname.length();
             int a = l >> 2;
-            if (l & 3) {
+            if (l & 3)
+            {
                 fname += static_cast<char> (l - (a << 2));
                 int i = 3 - (l & 3);
                 while (i--)
@@ -101,29 +104,25 @@ namespace MixID
         }
     }
     
-    std::string idStr(int32_t id)
+    std::string ToHexString(int32_t id)
     {
         std::stringstream os;
         os << std::setw(8) << std::setfill('0') << std::hex << id << std::dec;
         return os.str();
     }
     
-    std::string idStr(char* id, uint32_t size)
+    std::string ToHexString(const char* id, uint32_t size)
     {
-        //char const hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', 
-        //                             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
         std::stringstream os;
-        for(uint32_t i = 0; i < size; i++) {
+        for(uint32_t i = 0; i < size; i++)
+        {
             uint8_t const byte = id[i];
-            //os.append(&hex_chars[(byte  & 0xF0) >> 4], 1);
-            //os.append(&hex_chars[byte & 0xF], 1);
-            os << std::hex << std::setw(2) << std::setfill('0') 
-               << (uint32_t)byte << std::dec;
+            os << std::hex << std::setw(2) << std::setfill('0') << static_cast<uint32_t>(byte) << std::dec;
         }
         return os.str();
     }
     
-    int32_t strId(std::string hex)
+    int32_t FromHexString(std::string hex)
     {
         int32_t rv;   
         std::stringstream ss;
@@ -132,7 +131,7 @@ namespace MixID
         return rv;
     }
     
-    bool isIdName(std::string fname)
+    bool IsIDExists(std::string fname)
     {
         return !strncmp(fname.c_str(), marker, strlen(marker));
     }

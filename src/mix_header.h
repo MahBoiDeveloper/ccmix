@@ -6,15 +6,13 @@
 #include <fstream>
 #include <map>
 
-struct t_index_info
+struct IndexInfo
 {
     uint32_t offset;    // offset from start of body
     uint32_t size;      // size of this internal file
 };
 
-typedef std::map<int32_t, t_index_info> t_mix_index;
-typedef std::pair<int32_t, t_index_info> t_mix_entry;
-typedef std::map<int32_t, t_index_info>::iterator t_mix_index_iter;
+typedef std::map<int32_t, IndexInfo>::iterator t_mix_index_iter;
 
 /**
  * @brief Mix archive header.
@@ -82,7 +80,7 @@ public:
     bool writeHeader(std::fstream &fh);
     bool addEntry(int32_t id, uint32_t size);
     bool removeEntry(int32_t id, bool adjust);
-    t_index_info getEntry(int32_t id);
+    IndexInfo getEntry(int32_t id);
     bool getHasChecksum() { return m_has_checksum; }
     void setHasChecksum();
     void clearHasChecksum();
@@ -96,8 +94,8 @@ public:
     uint32_t getBodySize() { return m_body_size; }
     void setBodySize(uint32_t size) { m_body_size = size; }
     uint16_t getFileCount() { return m_file_count; }
-    t_mix_index_iter getBegin() { return m_index.begin(); }
-    t_mix_index_iter getEnd() { return m_index.end(); }
+    std::map<int32_t, IndexInfo>::iterator getBegin() { return m_index.begin(); }
+    std::map<int32_t, IndexInfo>::iterator getEnd() { return m_index.end(); }
     char* getKey() { return m_key; }
     char* getKeySource() { return m_keysource; }
     
@@ -114,8 +112,8 @@ private:
     uint32_t m_header_size;
     bool m_has_checksum;
     bool m_is_encrypted;
-    t_mix_index m_index;
-    t_mix_index m_old_index;
+    std::map<int32_t, IndexInfo> m_index;
+    std::map<int32_t, IndexInfo> m_old_index;
     char m_keysource[80];
     char m_key[56];
     
@@ -123,5 +121,4 @@ private:
     bool writeEncrypted(std::fstream &fh);
     bool readUnEncrypted(std::fstream &fh);
     bool writeUnEncrypted(std::fstream &fh);
-    //void setGame(GameKind game); //{ m_game_type = game; }
 };

@@ -470,7 +470,7 @@ dirent_first(
 
     } else {
 
-        /* Failed to re-open directory: no directory entry in memory */
+        /* Failed to re-Open directory: no directory entry in memory */
         dirp->cached = 0;
         datap = NULL;
 
@@ -547,7 +547,7 @@ opendir(
                 /* Directory stream opened */
                 error = 0;
             } else {
-                /* Failed to open directory stream */
+                /* Failed to Open directory stream */
                 error = 1;
             }
 

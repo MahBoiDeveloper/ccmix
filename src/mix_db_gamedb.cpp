@@ -30,7 +30,7 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
         data += id_data.description.length() + 1;
         m_size += id_data.description.length() + 1;
         //attempt to insert data and figure out if we had a collision.
-        rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type,
+        rv = m_name_map.insert(IdPair(MixID::GenerateID(m_game_type,
                         id_data.name), id_data));
     }
 }
@@ -40,7 +40,7 @@ void MixGameDB::writeDB(std::fstream& fh)
     //first record how many entries we have for this db.
     
     if(!fh.is_open()){
-        std::wcout << "File not open to write DB\n";
+        std::wcout << "File not Open to write DB\n";
     }
     fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
@@ -58,7 +58,7 @@ std::string MixGameDB::getName(int32_t id)
         return rv->second.name;
     }
     
-    return "[id]" + MixID::idStr(id);
+    return "[id]" + MixID::ToHexString(id);
 }
 
 bool MixGameDB::addName(std::string name, std::string description)
@@ -68,7 +68,7 @@ bool MixGameDB::addName(std::string name, std::string description)
     id_data.description = description;
     
     std::pair<IdIter,bool> rv;
-    rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type,
+    rv = m_name_map.insert(IdPair(MixID::GenerateID(m_game_type,
                     name), id_data));
     if(rv.second) {
         m_size += name.length() + 1;

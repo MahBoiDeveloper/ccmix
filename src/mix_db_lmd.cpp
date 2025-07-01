@@ -11,7 +11,7 @@ MixLMD::MixLMD(GameKind game)
     m_game_type = game;
     m_size = 52;
     addName(getDBName());
-    m_id = MixID::idGen(m_game_type, getDBName());
+    m_id = MixID::GenerateID(m_game_type, getDBName());
 }
 
 void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
@@ -36,7 +36,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     while (count--) {
         //get the id for this filename
         id_data = data;
-        int32_t id = MixID::idGen(m_game_type, id_data);
+        int32_t id = MixID::GenerateID(m_game_type, id_data);
         //check if its the LMD itself, if it is skip add logic
         if(id == m_id) {
             data += getDBName().length() + 1;
@@ -82,13 +82,13 @@ std::string MixLMD::getName(int32_t id)
         return rv->second;
     }
     
-    return "[id]" + MixID::idStr(id);
+    return "[id]" + MixID::ToHexString(id);
 }
 
 bool MixLMD::addName(std::string name)
 {
     std::pair<IdIter,bool> rv;
-    rv = m_name_map.insert(IdPair(MixID::idGen(m_game_type, name), name));
+    rv = m_name_map.insert(IdPair(MixID::GenerateID(m_game_type, name), name));
     if(rv.second) {
         m_size += name.length() + 1;
         return true;
@@ -102,7 +102,7 @@ bool MixLMD::addName(std::string name)
 
 bool MixLMD::deleteName(std::string name)
 {
-    return deleteName(MixID::idGen(m_game_type, name));
+    return deleteName(MixID::GenerateID(m_game_type, name));
 }
 
 bool MixLMD::deleteName(int32_t id)

@@ -15,9 +15,9 @@ enum class GameKind
 
 namespace MixID
 {
-    int32_t     idGen(GameKind game, std::string fname);
-    std::string idStr(int32_t id);
-    std::string idStr(char* id, uint32_t size);
-    int32_t     strId(std::string hex);
-    bool        isIdName(std::string fname);
+    int32_t     GenerateID(GameKind game, std::string fname);
+    std::string ToHexString(int32_t id);
+    std::string ToHexString(const char* id, uint32_t size);
+    int32_t     FromHexString(std::string hex);
+    bool        IsIDExists(std::string fname);
 }

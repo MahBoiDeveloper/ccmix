@@ -48,7 +48,7 @@ bool MixHeader::readHeader(std::fstream &fh)
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
-    //std::wcout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    //std::wcout << MixID::ToHexString(flagbuff, 6) << " Retrieved from header." << std::endl;
     
     if(*reinterpret_cast<uint32_t*>(flagbuff) == REN_SIG){
         std::wcout << "Error, Renegade mix format not supported." << std::endl;
@@ -106,7 +106,7 @@ bool MixHeader::readUnEncrypted(std::fstream &fh)
     //read entries
     for (uint16_t i = 0; i < m_file_count; i++) {
         fh.read(reinterpret_cast<char*>(&entry.first), sizeof(int32_t));
-        fh.read(reinterpret_cast<char*>(&entry.second), sizeof(t_index_info));
+        fh.read(reinterpret_cast<char*>(&entry.second), sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
             std::wcout << "Error reading header, duplicate ID" << std::endl;
@@ -139,7 +139,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     memcpy(reinterpret_cast<char*>(&m_file_count), pblkbuf, 2);
     memcpy(reinterpret_cast<char*>(&m_body_size), pblkbuf + 2 , 4);
     
-    //workout size of our header and how much we need to decrypt
+    //workout size of our header and how much we need to Decrypt
     //take into account 2 bytes left from getting the file count
     block_count = ((m_file_count * 12) - 2) / 8;
     if (((m_file_count * 12) - 2) % 8) block_count++;
@@ -152,7 +152,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     char* pindbuf = &indbuf.at(0);
     memcpy(pindbuf, pblkbuf + 6 , 2);
     
-    //loop to decrypt index into index buffer
+    //loop to Decrypt index into index buffer
     for(int i = 0; i < block_count; i++) {
         fh.read(pblkbuf, 8);
         blfish.ProcessString(reinterpret_cast<uint8_t*>(pblkbuf), 8);
@@ -164,7 +164,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
         memcpy(reinterpret_cast<char*>(&entry.first), pindbuf + i * 12,
                sizeof(int32_t));
         memcpy(reinterpret_cast<char*>(&entry.second), pindbuf + 4 + i * 12,
-               sizeof(t_index_info));
+               sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
             std::wcout << "Error reading header, duplicate ID" << std::endl;
@@ -243,7 +243,7 @@ void MixHeader::setKey()
     //convert keysource to integers
     Integer keyblk1(keybuf, 40), keyblk2(keybuf + 40, 40);
     
-    //decrypt
+    //Decrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);
     keyblk2 = rsakey.ApplyFunction(keyblk2);
     
@@ -309,7 +309,7 @@ void MixHeader::setKeySource()
     std::wcout << L"Generated Blowfish Key:" << std::endl;
     std::cout << std::hex << blowfish << std::dec << "\n";
     
-    //encrypt
+    //Encrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);
     keyblk2 = rsakey.ApplyFunction(keyblk2);
     
@@ -395,7 +395,7 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     //prepare blowfish
     blfish.SetKey(reinterpret_cast<uint8_t*>(m_key), 56);
     
-    //encrypt and write to file.
+    //Encrypt and write to file.
     offset = 0;
     while(block_count--){
         memcpy(pblkbuf, pindbuf + offset, 8);
@@ -410,7 +410,7 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
 
 bool MixHeader::addEntry(int32_t id, uint32_t size)
 {
-    t_index_info info;
+    IndexInfo info;
     t_mix_entry entry;
     std::pair<t_mix_index_iter,bool> rv;
     
@@ -473,9 +473,9 @@ bool MixHeader::removeEntry(int32_t id, bool adjust = false)
     
 }*/
 
-t_index_info MixHeader::getEntry(int32_t id)
+IndexInfo MixHeader::getEntry(int32_t id)
 {
-    t_index_info rv;
+    IndexInfo rv;
     rv.offset = 0;
     rv.size = 0;
     

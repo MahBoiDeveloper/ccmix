@@ -48,7 +48,7 @@
         word arguments.
     -   supports options which do not use a switch character. i.e. a special 
         word which is construed as an option. 
-        e.g. "foo.exe open /directory/file.txt" 
+        e.g. "foo.exe Open /directory/file.txt" 
     -   supports clumping of multiple short options (no arguments) in a string 
         e.g. "foo.exe -abcdef file1" <==> "foo.exe -a -b -c -d -e -f file1"
     -   automatic recognition of a single slash as equivalent to a single 
@@ -327,7 +327,7 @@ public:
         /*! ID to return for this flag. Optional but must be >= 0 */
         int nId;        
 
-        /*! arg string to search for, e.g.  "open", "-", "-f", "--file" 
+        /*! arg string to search for, e.g.  "Open", "-", "-f", "--file" 
             Note that on Windows the slash option marker will be converted
             to a hyphen so that "-f" will also match "/f". */
         const SOCHAR * pszArg;

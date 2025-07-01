@@ -1,22 +1,13 @@
 #include "mix_file.h"
-
-#ifdef _MSC_VER
+#include "win32/dirent.h"
 
 #include <Windows.h>
-
-#endif
 
 #include "../cryptopp/sha.h"
 #include "../cryptopp/integer.h"
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-
-#ifdef _MSC_VER
-#include "win32/dirent.h"
-#else
-#include <dirent.h>
-#endif
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -34,7 +25,7 @@ using CryptoPP::SHA1;
 
 #endif
 
-string MixFile::baseName(string const& pathname)
+string MixFile::BaseName(string const& pathname)
 {
     string rv = pathname;
     const size_t last_slash_idx = rv.find_last_of("\\/");
@@ -46,38 +37,38 @@ string MixFile::baseName(string const& pathname)
     return rv;
 }
 
-MixFile::MixFile(const string gmd, GameKind game) :
-m_header(game),
-m_global_db(),
-m_local_db(game)
+MixFile::MixFile(const string gmd, GameKind game) : header(game), m_global_db(), m_local_db(game)
 {
     fstream gmdfile;
     gmdfile.open(gmd.c_str(), fstream::in | fstream::binary);
-    if(gmdfile.is_open()){
+    if(gmdfile.is_open())
+    {
         m_global_db.ReadDB(gmdfile);
         gmdfile.close();
-    } else {
-        cout << "Could not open global mix database.dat" << endl;
+    }
+    else
+    {
+        cout << "Could not Open global mix database.dat" << endl;
     }
 }
 
 MixFile::~MixFile()
 {
-    close();
+    Close();
 }
 
-bool MixFile::open(const string path)
+bool MixFile::Open(const string path)
 {
-    t_index_info lmd;
+    IndexInfo lmd;
     m_file_path = path;
     int32_t fsize;
     
     if (fh.is_open())
-        close();
+        Close();
     
     fh.open(path.c_str(), fstream::in | fstream::out | fstream::binary);
     if (!fh.is_open()) {
-        cout << "File " << path << " failed to open" << endl;
+        cout << "File " << path << " failed to Open" << endl;
         return false;
     }
     
@@ -85,23 +76,23 @@ bool MixFile::open(const string path)
     fsize = fh.tellg();
     fh.seekg(0, ios::beg);
     
-    if (!m_header.readHeader(fh)) {
+    if (!header.readHeader(fh)) {
         return false;
     }
     
-    if (m_header.getBodySize() >= fsize - m_header.getHeaderSize()) {
-        m_header.setBodySize(fsize - m_header.getHeaderSize());
+    if (header.getBodySize() >= fsize - header.getHeaderSize()) {
+        header.setBodySize(fsize - header.getHeaderSize());
     }
     
-    if (m_header.getHasChecksum()) {
+    if (header.getHasChecksum()) {
         fh.seekg(-20, ios::end);
         fh.read(reinterpret_cast<char*>(m_checksum), 20);
     }
     
     //check if we have a local mix db and if its sane-ish
-    lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    if (lmd.size < m_header.getBodySize()) {
-        m_local_db.readDB(fh, lmd.offset + m_header.getHeaderSize(), lmd.size);
+    lmd = header.getEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()));
+    if (lmd.size < header.getBodySize()) {
+        m_local_db.readDB(fh, lmd.offset + header.getHeaderSize(), lmd.size);
         m_has_lmd = true;
     }
     
@@ -110,45 +101,45 @@ bool MixFile::open(const string path)
 
 bool MixFile::checkFileName(string name) 
 {
-    t_index_info rv = m_header.getEntry(MixID::idGen(m_header.getGame(), name));
+    IndexInfo rv = header.getEntry(MixID::GenerateID(header.getGame(), name));
     //size of a valid name will be > 0 hence true;
     return rv.size != 0;
 }
 
-bool MixFile::extractAll(string outPath) 
+bool MixFile::ExtractAll(string outPath) 
 {
     fstream ofile;
     string fname;
     bool rv;
             
-    for(t_mix_index_iter it = m_header.getBegin(); it != m_header.getEnd(); it++) {
+    for(t_mix_index_iter it = header.getBegin(); it != header.getEnd(); it++) {
         
         fname = m_local_db.getName(it->first);
         
         if(fname.substr(0, 4) == "[id]") {
-            fname = m_global_db.GetName(m_header.getGame(), it->first);
+            fname = m_global_db.GetName(header.getGame(), it->first);
         }
         
-        if (it->second.size <= m_header.getBodySize()) {
-            rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
+        if (it->second.size <= header.getBodySize()) {
+            rv = ExtractFile(it->first, outPath + DIR_SEPARATOR + fname);
         }
     }
     
     return rv;
 }
 
-bool MixFile::extractFile(int32_t id, string out) 
+bool MixFile::ExtractFile(int32_t id, string out) 
 {
     ofstream of;
     char * buffer;
-    t_index_info entry;
+    IndexInfo entry;
 
     // find file index entry
-    entry = m_header.getEntry(id);
+    entry = header.getEntry(id);
     
     if(entry.size) {
         buffer = new char[entry.size];
-        fh.seekg(m_header.getHeaderSize() + entry.offset);
+        fh.seekg(header.getHeaderSize() + entry.offset);
         fh.read(buffer, entry.size);
 
         of.open(out.c_str(), ios_base::binary);
@@ -163,12 +154,12 @@ bool MixFile::extractFile(int32_t id, string out)
     return false;
 }
 
-bool MixFile::extractFile(string filename, string outpath) 
+bool MixFile::ExtractFile(string filename, string outpath) 
 {
-    return extractFile(MixID::idGen(m_header.getGame(), filename), outpath);
+    return ExtractFile(MixID::GenerateID(header.getGame(), filename), outpath);
 }
 
-bool MixFile::createMix(string fileName, string in_dir, 
+bool MixFile::CreateMix(string fileName, string in_dir, 
                         bool with_lmd, bool encrypted, bool checksum, 
                         string key_src) 
 {
@@ -176,21 +167,21 @@ bool MixFile::createMix(string fileName, string in_dir,
     DIR* dp;
     struct dirent *dirp;
     struct stat st;
-    //t_index_info finfo;
+    //IndexInfo finfo;
     //use mix_head.size uint32_t offset = 0;
     fstream ifile;
     //int32_t file_id;
     std::vector<std::string> filenames; // file names
     
-    if(encrypted) m_header.setIsEncrypted();
-    if(checksum) m_header.setHasChecksum();
+    if(encrypted) header.setIsEncrypted();
+    if(checksum) header.setHasChecksum();
     
-    //cout << "Game we are building for is " << m_header.getGame() << endl;
-    /*if(m_header.getIsEncrypted()){
+    //cout << "Game we are building for is " << header.getGame() << endl;
+    /*if(header.getIsEncrypted()){
         cout << "Header will be encrypted." << endl;
     }*/
     
-    //make sure we can open the directory
+    //make sure we can Open the directory
     if((dp = opendir(in_dir.c_str())) == NULL) {
         cout << "Error opening " << in_dir << endl;
         return false;
@@ -202,7 +193,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         if(!S_ISDIR(st.st_mode)){
             
             //check if we have an ID containing file name, if not add to localdb
-            if(!MixID::isIdName(string(dirp->d_name))){
+            if(!MixID::IsIDExists(string(dirp->d_name))){
                 if(!m_local_db.addName(string(dirp->d_name))) {
                     cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
                     continue;
@@ -212,7 +203,7 @@ bool MixFile::createMix(string fileName, string in_dir,
             //try adding entry to header, skip if failed
             stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
             
-            if(!m_header.addEntry(MixID::idGen(m_header.getGame(), 
+            if(!header.addEntry(MixID::GenerateID(header.getGame(), 
                                   string(dirp->d_name)), 
                                   st.st_size)) {
                 continue;
@@ -228,24 +219,24 @@ bool MixFile::createMix(string fileName, string in_dir,
     //are we wanting lmd? if so push header info for it here
     if(with_lmd){
         filenames.push_back(m_local_db.getDBName());
-        m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()), 
+        header.addEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()), 
                           m_local_db.getSize());
     }
     
-    //cout << m_header.getBodySize() << " files, total size " << m_header.getFileCount() << " before writing header" << endl;
+    //cout << header.getBodySize() << " files, total size " << header.getFileCount() << " before writing header" << endl;
     
     //if we are encrypted, get a key source
     /*
-    if(m_header.getIsEncrypted()){
-        ifile.open(key_src.c_str(), ios::binary|ios::in);
-        //readKeySource checks if file is actually open
-        if(!m_header.readKeySource(ifile)){
-            cout << "Could not open a key_source, encryption disabled" << endl;
-            m_header.clearIsEncrypted();
+    if(header.getIsEncrypted()){
+        ifile.Open(key_src.c_str(), ios::binary|ios::in);
+        //readKeySource checks if file is actually Open
+        if(!header.readKeySource(ifile)){
+            cout << "Could not Open a key_source, encryption disabled" << endl;
+            header.clearIsEncrypted();
         } else {
             cout << "Header will be encrypted" << endl;
         }
-        ifile.close();
+        ifile.Close();
     }
     */
     
@@ -259,7 +250,7 @@ bool MixFile::createMix(string fileName, string in_dir,
     }
     
     //write a header
-    if(!m_header.writeHeader(fh)) {
+    if(!header.writeHeader(fh)) {
         cout << "Failed to write header." << endl;
         return false;
     }
@@ -278,7 +269,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         ifile.open((in_dir + DIR_SEPARATOR + filenames[i]).c_str(), 
                     fstream::in | fstream::binary);
         if(!ifile.is_open()) {
-            cout << "Could not open input file " << filenames[i] << endl;
+            cout << "Could not Open input file " << filenames[i] << endl;
             return false;
         }
         while(ifile.get(c)) {
@@ -293,11 +284,11 @@ bool MixFile::createMix(string fileName, string in_dir,
     }
     
     //just write the checksum, flag is set further up
-    if(m_header.getHasChecksum()){
-        writeCheckSum(fh);
+    if(header.getHasChecksum()){
+        WriteCheckSum(fh);
     }
     
-    //cout << "Offset to data is " << m_header.getHeaderSize() << endl;
+    //cout << "Offset to data is " << header.getHeaderSize() << endl;
     
     fh.close();
     
@@ -310,37 +301,37 @@ bool MixFile::addFile(string name)
     //use mix_head.size uint32_t offset = 0;
     fstream ifh;
     fstream ofh;
-    t_index_info lmd;
-    t_index_info old;
-    std::vector<t_index_info> removals;
+    IndexInfo lmd;
+    IndexInfo old;
+    std::vector<IndexInfo> removals;
     std::vector<std::string> filenames; // file names
     
     m_skip.clear();
     //int location;
     
     //get filename without path info
-    string basename = baseName(name);
+    string basename = BaseName(name);
     
     cout << "Adding " << basename << endl;
     
     //save the old data offset from header before we started changing it.
-    uint32_t old_offset = m_header.getHeaderSize();
-    uint32_t old_size = old_offset + m_header.getBodySize();
+    uint32_t old_offset = header.getHeaderSize();
+    uint32_t old_size = old_offset + header.getBodySize();
     
-    lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    old = m_header.getEntry(MixID::idGen(m_header.getGame(), basename)); 
+    lmd = header.getEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()));
+    old = header.getEntry(MixID::GenerateID(header.getGame(), basename)); 
     
     //add skip entry for lmd if we have one and remove from header
     if(lmd.size) {
         m_skip[lmd.offset] = lmd.size;
-        m_header.removeEntry(MixID::idGen(m_header.getGame(), 
+        header.removeEntry(MixID::GenerateID(header.getGame(), 
                              m_local_db.getDBName()), true);
     }
     
     //setup to skip over the file if it is replacing
     if(old.size) {
         m_skip[old.offset] = old.size;
-        m_header.removeEntry(MixID::idGen(m_header.getGame(), basename), true);
+        header.removeEntry(MixID::GenerateID(header.getGame(), basename), true);
         cout << "A file with the same ID exists and will be replaced." << endl;
     }
     
@@ -349,7 +340,7 @@ bool MixFile::addFile(string name)
     if(!S_ISDIR(st.st_mode)){
         m_local_db.addName(basename);
         filenames.push_back(basename);
-        m_header.addEntry(MixID::idGen(m_header.getGame(), basename), st.st_size);
+        header.addEntry(MixID::GenerateID(header.getGame(), basename), st.st_size);
     } else {
         cout << "Cannot add directory as a file" << endl;
         return false;
@@ -357,25 +348,25 @@ bool MixFile::addFile(string name)
     
     //if the lmd had a size before (thus existed), add it back to header now
     if(lmd.size) {
-        m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
+        header.addEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()),
                           m_local_db.getSize());
     }
     
-    //open a temp file
+    //Open a temp file
     ofh.open("~ccmix.tmp", ios::binary|ios::out);
     if(!ofh.is_open()){
-        cout << "Couldn't open a temporary file to buffer the changes" << endl;
+        cout << "Couldn't Open a temporary file to buffer the changes" << endl;
         return false;
     }
     
     //write our new header
-    m_header.writeHeader(ofh);
+    header.writeHeader(ofh);
     
     //copy the body of the old mix, skipping the old lmd and replaced file
     fh.seekg(old_offset, ios::beg);
     
     if(m_skip.size()){
-        for(t_skip_map_iter it = m_skip.begin(); it != m_skip.end(); it++) {
+        for(SkipMapIter it = m_skip.begin(); it != m_skip.end(); it++) {
             while(fh.tellg() < it->first + old_offset){
                 ofh.put(fh.get());
             }
@@ -387,10 +378,10 @@ bool MixFile::addFile(string name)
         ofh.put(fh.get());
     }
     
-    //open the file to add, if we can't open, bail and delete temp file
+    //Open the file to add, if we can't Open, bail and delete temp file
     ifh.open(name.c_str(), ios::binary|ios::in);
     if(!ifh.is_open()){
-        cout << "Failed to open file to add" << endl;
+        cout << "Failed to Open file to add" << endl;
         remove("~ccmix.tmp");
         return false;
     }
@@ -408,72 +399,72 @@ bool MixFile::addFile(string name)
     }
     
     //write checksum to end of file if required.
-    if(m_header.getHasChecksum()){
-        writeCheckSum(ofh, 0);
+    if(header.getHasChecksum()){
+        WriteCheckSum(ofh, 0);
     }
     
     //Replace the old file with our new one.
-    overWriteOld("~ccmix.tmp");
+    OverWriteOld("~ccmix.tmp");
     
     return true;
 }
 
 bool MixFile::removeFile(std::string name)
 {
-    return removeFile(MixID::idGen(m_header.getGame(), baseName(name)));
+    return removeFile(MixID::GenerateID(header.getGame(), BaseName(name)));
 }
 
 bool MixFile::removeFile(int32_t id)
 {
-    t_index_info lmd;
-    t_index_info rem;
+    IndexInfo lmd;
+    IndexInfo rem;
     fstream ofh;
     
     //empty the skip map
     m_skip.clear();
     
     //save the old data offset from header before we started changing it.
-    uint32_t old_offset = m_header.getHeaderSize();
-    uint32_t old_size = old_offset + m_header.getBodySize();
+    uint32_t old_offset = header.getHeaderSize();
+    uint32_t old_size = old_offset + header.getBodySize();
     
     //set up to skip copying the lmd if the mix contains one
-    lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    rem = m_header.getEntry(id);
+    lmd = header.getEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()));
+    rem = header.getEntry(id);
     
     if(!rem.size) return false;
             
     //add skip entry for lmd if we have one and remove from header
     if(lmd.size) {
         m_skip[lmd.offset] = lmd.size;
-        m_header.removeEntry(MixID::idGen(m_header.getGame(), 
+        header.removeEntry(MixID::GenerateID(header.getGame(), 
                              m_local_db.getDBName()), true);
     }
     
     //add our file to the skip map and remove it
     m_skip[rem.offset] = rem.size;
-    m_header.removeEntry(id, true);
+    header.removeEntry(id, true);
     m_local_db.deleteName(id);
     
     //re-add our lmd entry if we had one will recalc its position
     if(lmd.size) {
-        m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
+        header.addEntry(MixID::GenerateID(header.getGame(), m_local_db.getDBName()),
                           m_local_db.getSize());
     }
     
-    //open a temp file
+    //Open a temp file
     ofh.open("~ccmix.tmp", ios::binary|ios::out);
     if(!ofh.is_open()){
-        cout << "Couldn't open a temporary file to buffer the changes" << endl;
+        cout << "Couldn't Open a temporary file to buffer the changes" << endl;
         return false;
     }
     
     //write our new header
-    m_header.writeHeader(ofh);
+    header.writeHeader(ofh);
     
     //copy the body of the old mix, skipping files in m_skip
     fh.seekg(old_offset, ios::beg);
     
-    for(t_skip_map_iter it = m_skip.begin(); it != m_skip.end(); it++) {
+    for(SkipMapIter it = m_skip.begin(); it != m_skip.end(); it++) {
         while(fh.tellg() < it->first + old_offset){
             ofh.put(fh.get());
         }
@@ -490,11 +481,11 @@ bool MixFile::removeFile(int32_t id)
     }
     
     //write checksum to end of file if required. will have to overwrite old one
-    if(m_header.getHasChecksum()){
-        writeCheckSum(ofh, 0);
+    if(header.getHasChecksum()){
+        WriteCheckSum(ofh, 0);
     }
     
-    overWriteOld("~ccmix.tmp");
+    OverWriteOld("~ccmix.tmp");
     
     return true;
 }
@@ -502,18 +493,18 @@ bool MixFile::removeFile(int32_t id)
 bool MixFile::addCheckSum()
 {
     //check if we think this file is checksummed already
-    if(m_header.getHasChecksum()){
+    if(header.getHasChecksum()){
         cout << "File is already flagged as having a checksum" << endl;
         return false;
     }
     
     //toggle flag for checksum and then write it
-    m_header.setHasChecksum();
+    header.setHasChecksum();
     fh.seekp(0, ios::beg);
-    m_header.writeHeader(fh);
+    header.writeHeader(fh);
     
     //write the actual checksum
-    writeCheckSum(fh);
+    WriteCheckSum(fh);
     
     return true;
 }
@@ -521,24 +512,24 @@ bool MixFile::addCheckSum()
 bool MixFile::removeCheckSum()
 {
     fstream ofh;
-    uint32_t old_offset = m_header.getHeaderSize();
-    uint32_t old_size = old_offset + m_header.getBodySize(); 
+    uint32_t old_offset = header.getHeaderSize();
+    uint32_t old_size = old_offset + header.getBodySize(); 
     
     //check if we think this file is checksummed already
-    if(!m_header.getHasChecksum()){
+    if(!header.getHasChecksum()){
         cout << "File is already flagged as not having a checksum" << endl;
         return false;
     }
     
     ofh.open("~ccmix.tmp", ios::binary|ios::out);
     if(!ofh.is_open()){
-        cout << "Couldn't open a temporary file to buffer the changes" << endl;
+        cout << "Couldn't Open a temporary file to buffer the changes" << endl;
         return false;
     }
     
     //toggle flag for checksum and then write it
-    m_header.clearHasChecksum();
-    m_header.writeHeader(ofh);
+    header.clearHasChecksum();
+    header.writeHeader(ofh);
  
     fh.seekg(old_offset, ios::beg);
     
@@ -546,12 +537,12 @@ bool MixFile::removeCheckSum()
         ofh.put(fh.get());
     }
     
-    overWriteOld("~ccmix.tmp");
+    OverWriteOld("~ccmix.tmp");
     
     return true;
 }
 
-bool MixFile::writeCheckSum(fstream &fh, int32_t pos) 
+bool MixFile::WriteCheckSum(fstream &fh, int32_t pos) 
 {
     SHA1 sha1;
     const size_t BufferSize = 144*7*1024;
@@ -563,7 +554,7 @@ bool MixFile::writeCheckSum(fstream &fh, int32_t pos)
     ofstream testout;
     
     //read data into sha1 algo from dataoffset
-    fh.seekg(m_header.getHeaderSize(), ios::beg);
+    fh.seekg(header.getHeaderSize(), ios::beg);
     
     while(!fh.eof()) {//#include "MixData.h"
         fh.read(reinterpret_cast<char*>(buffer), BufferSize);
@@ -577,7 +568,7 @@ bool MixFile::writeCheckSum(fstream &fh, int32_t pos)
     // get our hash and print it to console as well
     sha1.Final(hash);
     cout << "Checksum is "
-    << MixID::idStr(reinterpret_cast<char*>(hash), 20);
+    << MixID::ToHexString(reinterpret_cast<char*>(hash), 20);
     cout << endl;
     
     //write checksum, pos is position from end to start at.
@@ -592,15 +583,15 @@ bool MixFile::writeCheckSum(fstream &fh, int32_t pos)
 void MixFile::printFileList() 
 {
     string fname;
-    t_mix_index_iter it = m_header.getBegin();
-    while(it != m_header.getEnd()){
+    t_mix_index_iter it = header.getBegin();
+    while(it != header.getEnd()){
         //try to get a filename, if lmd doesn't have it try gmd.
         fname = m_local_db.getName(it->first);
         if(fname.substr(0, 4) == "[id]") {
-            fname = m_global_db.GetName(m_header.getGame(), it->first);
+            fname = m_global_db.GetName(header.getGame(), it->first);
         }
         
-        cout << setw(24) << fname << setw(10) << MixID::idStr(it->first) <<
+        cout << setw(24) << fname << setw(10) << MixID::ToHexString(it->first) <<
                 setw(12) << it->second.offset << setw(12) << 
                 it->second.size << endl;
         it++;
@@ -609,7 +600,7 @@ void MixFile::printFileList()
 
 void MixFile::printInfo()
 {
-    if(m_header.getGame()){
+    if(header.getGame()){
         cout << "This mix is a new style mix that supports header encryption"
                 " and checksums.\nRed Alert onwards can read this type of mix"
                 " but the ID's used differ between Red Alert and later games.\n"
@@ -620,34 +611,34 @@ void MixFile::printInfo()
                 " use this format exclusively and Red Alert can\nuse them as well"
                 ".\n" << endl;
     }
-    cout << "It contains " << m_header.getFileCount() << " files"
-            " which take up " << m_header.getBodySize() << " bytes\n" << endl;
-    if(m_header.getIsEncrypted()){
+    cout << "It contains " << header.getFileCount() << " files"
+            " which take up " << header.getBodySize() << " bytes\n" << endl;
+    if(header.getIsEncrypted()){
         cout << "The mix has an encrypted header.\n\nThe blowfish key is " <<
-                MixID::idStr(m_header.getKey(), 56) << "\n" << endl;
+                MixID::ToHexString(header.getKey(), 56) << "\n" << endl;
         cout << "The key was recovered from the following key source:\n" <<
-                MixID::idStr(m_header.getKeySource(), 80) << "\n" <<
+                MixID::ToHexString(header.getKeySource(), 80) << "\n" <<
                 endl;
     }
-    if(m_header.getHasChecksum()){
+    if(header.getHasChecksum()){
         cout << "The mix has a SHA1 checksum:\nSHA1: " << 
-                MixID::idStr(reinterpret_cast<char*>(m_checksum), 20) << "\n" << endl;
+                MixID::ToHexString(reinterpret_cast<char*>(m_checksum), 20) << "\n" << endl;
     }
 }
 
-bool MixFile::decrypt()
+bool MixFile::Decrypt()
 {
     fstream ofh;
     
     //are we already decrypted?
-    if (!m_header.getIsEncrypted()) return false;
+    if (!header.getIsEncrypted()) return false;
     
     //get some info on original file and then set header to decrypted
-    uint32_t dataoffset = m_header.getHeaderSize();
-    m_header.clearIsEncrypted();
+    uint32_t dataoffset = header.getHeaderSize();
+    header.clearIsEncrypted();
     
     ofh.open("~ccmix.tmp", fstream::out | fstream::binary | fstream::trunc);
-    m_header.writeHeader(ofh);
+    header.writeHeader(ofh);
     
     fh.seekg(dataoffset);
     
@@ -657,24 +648,24 @@ bool MixFile::decrypt()
     
     ofh.close();
     
-    overWriteOld("~ccmix.tmp");
+    OverWriteOld("~ccmix.tmp");
 
     return true;
 }
 
-bool MixFile::encrypt()
+bool MixFile::Encrypt()
 {
     fstream ofh;
     
     //are we already encrypted?
-    if (m_header.getIsEncrypted()) return false;
+    if (header.getIsEncrypted()) return false;
     
     //get some info on original file and then set header to decrypted
-    uint32_t dataoffset = m_header.getHeaderSize();
-    m_header.setIsEncrypted();
+    uint32_t dataoffset = header.getHeaderSize();
+    header.setIsEncrypted();
     
     ofh.open("~ccmix.tmp", fstream::out | fstream::binary | fstream::trunc);
-    m_header.writeHeader(ofh);
+    header.writeHeader(ofh);
     
     fh.seekg(dataoffset);
     
@@ -684,12 +675,12 @@ bool MixFile::encrypt()
     
     ofh.close();
     
-    //overWriteOld("~ccmix.tmp");
+    //OverWriteOld("~ccmix.tmp");
     
     return true;
 }
 
-bool MixFile::overWriteOld(std::string temp)
+bool MixFile::OverWriteOld(std::string temp)
 {
     fstream ifh;
     string newname = m_file_path;
@@ -700,7 +691,7 @@ bool MixFile::overWriteOld(std::string temp)
     return true;
 }
 
-void MixFile::close()
+void MixFile::Close()
 {
     fh.close();   
 }

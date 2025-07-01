@@ -44,7 +44,7 @@ std::string FindGMD(const std::string program_dir, const std::string home_dir)
     for (unsigned int i = 0; i < gmd_dir.size(); i++)
     {
         std::string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
-        if (FILE *file = fopen(gmd_test.c_str(), "r"))
+        if (FILE* file = fopen(gmd_test.c_str(), "r"))
         {
             fclose(file);
             return gmd_test;
@@ -67,7 +67,7 @@ std::string FindKeySource(const std::string program_dir)
 
 // This just shows a quick usage guide in case an incorrect parameter was used
 // or not all required args were provided.
-inline void ShowUsage(TCHAR** argv)
+void ShowUsage(wchar_t** argv)
 {
     std::wcout << "Usage: " << argv[0] << " [--mode] (--file FILE)"
             "(--directory DIR) [--mix MIXFILE]" << std::endl;
@@ -76,7 +76,7 @@ inline void ShowUsage(TCHAR** argv)
 }
 
 // Shows more detailed help if help flags were used in invocation.
-void ShowHelp(TCHAR** argv)
+void ShowHelp(wchar_t** argv)
 {
     std::wcout << "/n***ccmix program usage***\n" << std::endl;
     std::wcout << "Usage: " << argv[0] <<
@@ -128,7 +128,7 @@ void ShowHelp(TCHAR** argv)
 }
 
 //quick inline to respond to more than one command being specified.
-void NoMultiMode(TCHAR** argv)
+void NoMultiMode(wchar_t** argv)
 {
     std::cout << "You cannot specify more than one mode at once." << std::endl;
     ShowUsage(argv);
@@ -156,7 +156,7 @@ bool Extraction(MixFile& in_file, std::string filename, std::string outdir, uint
     std::string destination = outdir + DIR_SEPARATOR + filename;
 
     if (filename == "" && id == 0) {
-        if (!in_file.extractAll(outdir)) {
+        if (!in_file.ExtractAll(outdir)) {
             std::wcout << "Extraction failed" << std::endl;
             return false;
         }
@@ -165,7 +165,7 @@ bool Extraction(MixFile& in_file, std::string filename, std::string outdir, uint
         }
     }
     else if (filename != "" && id == 0) {
-        if (!in_file.extractFile(filename, destination)) {
+        if (!in_file.ExtractFile(filename, destination)) {
             std::wcout << "Extraction failed" << std::endl;
             return false;
         }
@@ -179,7 +179,7 @@ bool Extraction(MixFile& in_file, std::string filename, std::string outdir, uint
                 "an ID" << std::endl;
             return false;
         }
-        if (!in_file.extractFile(id, destination)) {
+        if (!in_file.ExtractFile(id, destination)) {
             std::wcout << "Extraction failed" << std::endl;
             return false;
         }
@@ -194,32 +194,6 @@ bool Extraction(MixFile& in_file, std::string filename, std::string outdir, uint
     return false;
 }
 
-//Return a string of the home dir path
-std::string GetHomeDir()
-{
-    char* tmp;
-    std::string rv;
-
-#ifdef _WIN32
-
-    tmp = getenv("HOMEDRIVE");
-    if (tmp == NULL) {
-        return "";
-    }
-    else {
-        rv = std::string(tmp);
-    }
-
-    tmp = getenv("HOMEPATH");
-    if (tmp == NULL) {
-        return "";
-    }
-    else {
-        rv += std::string(tmp);
-    }
-    return rv;
-}
-
 //This specifies the various available command line options
 CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("--extract"),      SO_NONE    },
@@ -229,7 +203,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_LIST,     _T("--list"),         SO_NONE    },
     { OPT_INFO,     _T("--info"),         SO_NONE    },
     { OPT_LMD,      _T("--lmd"),          SO_NONE    },
-    { OPT_ENC,      _T("--encrypt"),      SO_NONE    },
+    { OPT_ENC,      _T("--Encrypt"),      SO_NONE    },
     { OPT_CHK,      _T("--checksum"),     SO_NONE    },
     { OPT_FILES,    _T("--file"),         SO_REQ_SEP },
     { OPT_ID,       _T("--id"),           SO_REQ_SEP },
@@ -241,7 +215,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     SO_END_OF_OPTIONS
 };
 
-void main(int argc, TCHAR** argv)
+void main(int argc, wchar_t** argv)
 {
     if (argc <= 1)
     {
@@ -249,20 +223,19 @@ void main(int argc, TCHAR** argv)
         return;
     }
 
-    //initialise some variables used later
-    uint32_t fileId = 0;
-    std::wstring file = L"";
-    std::string dir = "";
-    std::string inpuMixFile = "";
-    const std::wstring programPath(argv[0]);
-    std::string user_home_dir = GetHomeDir();
-    GameKind game = GameKind::TD;
-    ExecutionMode mode = ExecutionMode::NONE;
-    bool local_db = false;
-    bool encrypt = false;
-    bool checksum = false;
+    // initialise some variables used later
+    uint32_t           fileId      = 0;
+    std::wstring       file        = L"";
+    std::string        dir         = "";
+    std::string        inpuMixFile = "";
+    const std::wstring programPath = argv[0];
+    GameKind           game        = GameKind::TD;
+    ExecutionMode      mode        = ExecutionMode::NONE;
+    bool               local_db    = false;
+    bool               encrypt     = false;
+    bool               checksum    = false;
 
-    //seed random number generator
+    // seed random number generator
     srand(time(NULL));
 
     CSimpleOpt args(argc, argv, g_rgOptions);
@@ -422,8 +395,8 @@ void main(int argc, TCHAR** argv)
     {
         MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(inpuMixFile)) {
-            std::wcout << "Cannot open specified mix file" << std::endl;
+        if (!in_file.Open(inpuMixFile)) {
+            std::wcout << "Cannot Open specified mix file" << std::endl;
             return 1;
         }
 
@@ -438,7 +411,7 @@ void main(int argc, TCHAR** argv)
         MixFile out_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
-        if (!out_file.createMix(inpuMixFile, dir, local_db,
+        if (!out_file.CreateMix(inpuMixFile, dir, local_db,
             encrypt, checksum, FindKeySource(std::filesystem::current_path())))) {
             std::wcout << "Failed to create new mix file" << std::endl;
             return 1;
@@ -452,8 +425,8 @@ void main(int argc, TCHAR** argv)
         MixFile in_file(FindGMD(std::filesystem::current_path()),
             user_home_dir), game);
 
-        if (!in_file.open(inpuMixFile))
-            std::wcout << "Cannot open specified mix file" << std::endl;
+        if (!in_file.Open(inpuMixFile))
+            std::wcout << "Cannot Open specified mix file" << std::endl;
 
         if (file == L"") {
             if (checksum) {
@@ -470,8 +443,8 @@ void main(int argc, TCHAR** argv)
     {
         MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(inpuMixFile))
-            std::wcout << "Cannot open specified mix file" << std::endl;
+        if (!in_file.Open(inpuMixFile))
+            std::wcout << "Cannot Open specified mix file" << std::endl;
 
         if (file == L"")
             if (checksum) 
@@ -485,8 +458,8 @@ void main(int argc, TCHAR** argv)
     {
         MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(inpuMixFile))
-            std::wcout << "Cannot open specified mix file" << std::endl;
+        if (!in_file.Open(inpuMixFile))
+            std::wcout << "Cannot Open specified mix file" << std::endl;
 
         in_file.printFileList();
         break;
@@ -495,8 +468,8 @@ void main(int argc, TCHAR** argv)
     {
         MixFile in_file(FindGMD(std::filesystem::current_path()), user_home_dir), game);
 
-        if (!in_file.open(inpuMixFile)) 
-            std::wcout << "Cannot open specified mix file" << std::endl;
+        if (!in_file.Open(inpuMixFile)) 
+            std::wcout << "Cannot Open specified mix file" << std::endl;
 
         in_file.printInfo();
         break;
