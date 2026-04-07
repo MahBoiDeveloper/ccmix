@@ -20,7 +20,7 @@ using namespace CryptoPP;
 const uint8_t inverse[] = { 0x8, 0xf, 0x6, 0x1, 0x5, 0x2, 0xb, 0xc, 0x3, 0x4, 0xd, 0xa, 0xe, 0x9, 0x0, 0x7 };
 const uint8_t shadows[] = { 0xe, 0x3, 0x5, 0x8, 0x9, 0x4, 0x2, 0xf, 0x0, 0xd, 0xb, 0x6, 0x7, 0xa, 0xc, 0x1 };
 
-void bintTobfish(Integer& bint, uint8_t* key, int len = 56)
+void BintToBfish(Integer& bint, uint8_t* key, int len = 56)
 {
     uint8_t buffer[56];
     bint.Encode(buffer, 56);
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
         j--;
     }
     
-    get_blowfish_key(keysource, key);
+    GetBlowfishKey(keysource, key);
     std::string pubkey;
     std::string prvkey;
     Base64Decoder decode;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     std::cout << std::hex << dec1 << "\n";
     std::cout << std::hex << dec2 << "\n\n";
     
-    bintTobfish(blowfishkey, nukey);
+    BintToBfish(blowfishkey, nukey);
     //Integer testkey(nukey, 56);
     //std::cout << std::hex << testkey << "\n";
     
@@ -139,3 +139,4 @@ int main(int argc, char* argv[])
     bfdecrypt.ProcessString(bfbuf, 8);
     //std::cout << "Decrypted num of files: " << std::dec << *(int16_t*)bfbuf << "\n";
 }
+

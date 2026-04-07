@@ -48,20 +48,20 @@ bignum4 glob1_hi, glob1_hi_inv;
 uint32_t glob1_hi_bitlen;
 uint32_t glob1_hi_inv_lo, glob1_hi_inv_hi;
 
-void print_hex(const char* bigint, int size)
+void PrintHex(const char* bigint, int size)
 {
     for(int i = size - 1; i >= 0; i--){
         printf("%02X", bigint[i]);
     }
 }
 
-static void init_bignum(bignum n, uint32_t val, uint32_t len)
+static void InitBignum(bignum n, uint32_t val, uint32_t len)
 {
     memset((void *)n, 0, len * 4);
     n[0] = val;
 }
 
-static void move_key_to_big(bignum n, char *key, uint32_t klen, uint32_t blen)
+static void MoveKeyToBig(bignum n, char *key, uint32_t klen, uint32_t blen)
 {
     uint32_t sign;
     unsigned int i;
@@ -75,7 +75,7 @@ static void move_key_to_big(bignum n, char *key, uint32_t klen, uint32_t blen)
         ((char *)n)[i-1] = key[klen-i];
 }
 
-static void key_to_bignum(bignum n, char *key, uint32_t len)
+static void KeyToBignum(bignum n, char *key, uint32_t len)
 {
     uint32_t keylen;
     int i;
@@ -95,10 +95,10 @@ static void key_to_bignum(bignum n, char *key, uint32_t len)
         key++;
     }
     if (keylen <= len*4)
-        move_key_to_big(n, key, keylen, len);
+        MoveKeyToBig(n, key, keylen, len);
 }
 
-static uint32_t len_bignum(bignum n, uint32_t len)
+static uint32_t LenBignum(bignum n, uint32_t len)
 {
   int i;
   i = len-1;
@@ -106,10 +106,10 @@ static uint32_t len_bignum(bignum n, uint32_t len)
   return i+1;
 }
 
-static uint32_t bitlen_bignum(bignum n, uint32_t len)
+static uint32_t BitlenBignum(bignum n, uint32_t len)
 {
   uint32_t ddlen, bitlen, mask;
-  ddlen = len_bignum(n, len);
+  ddlen = LenBignum(n, len);
   if (ddlen == 0) return 0;
   bitlen = ddlen * 32;
   mask = 0x80000000;
@@ -120,12 +120,12 @@ static uint32_t bitlen_bignum(bignum n, uint32_t len)
   return bitlen;
 }
 
-static void init_pubkey()
+static void InitPubkey()
 {
     uint32_t i, i2, tmp;
     char keytmp[256];
 
-    init_bignum(pubkey.key2, 0x10001, 64);
+    InitBignum(pubkey.key2, 0x10001, 64);
 
     i = 0;
     i2 = 0;
@@ -139,11 +139,11 @@ static void init_pubkey()
         keytmp[i2++] = (tmp >> 8) & 0xff;
         keytmp[i2++] = tmp & 0xff;
     }
-    key_to_bignum(pubkey.key1, keytmp, 64);
-    pubkey.len = bitlen_bignum(pubkey.key1, 64) - 1;
+    KeyToBignum(pubkey.key1, keytmp, 64);
+    pubkey.len = BitlenBignum(pubkey.key1, 64) - 1;
 }
 
-static void init_prvkey()
+static void InitPrvkey()
 {
     uint32_t i, i2, tmp;
     char keytmp[256];
@@ -162,7 +162,7 @@ static void init_prvkey()
         keytmp2[i2++] = tmp & 0xff;
     }
     
-    key_to_bignum(pubkey.key2, keytmp2, 64);
+    KeyToBignum(pubkey.key2, keytmp2, 64);
 
     i = 0;
     i2 = 0;
@@ -176,23 +176,23 @@ static void init_prvkey()
         keytmp[i2++] = (tmp >> 8) & 0xff;
         keytmp[i2++] = tmp & 0xff;
     }
-    key_to_bignum(pubkey.key1, keytmp, 64);
-    pubkey.len = bitlen_bignum(pubkey.key2, 64) - 1;
+    KeyToBignum(pubkey.key1, keytmp, 64);
+    pubkey.len = BitlenBignum(pubkey.key2, 64) - 1;
 }
 
-static uint32_t len_predata()
+static uint32_t LenPredata()
 {
     uint32_t a = (pubkey.len - 1) / 8;
     return (55 / a + 1) * (a + 1);
 }
 
-static uint32_t len_predata_gen()
+static uint32_t LenPredataGen()
 {
     uint32_t a = (pubkey.len - 1) / 8;
     return (79 / a + 1) * (a + 1);
 }
 
-static long int cmp_bignum(bignum n1, bignum n2, uint32_t len)
+static long int CmpBignum(bignum n1, bignum n2, uint32_t len)
 {
   n1 += len-1;
   n2 += len-1;
@@ -206,12 +206,12 @@ static long int cmp_bignum(bignum n1, bignum n2, uint32_t len)
   return 0;
 }
 
-static void mov_bignum(bignum dest, bignum src, uint32_t len)
+static void MovBignum(bignum dest, bignum src, uint32_t len)
 {
   memmove(dest, src, len*4);
 }
 
-static void shr_bignum(bignum n, uint32_t bits, long int len)
+static void ShrBignum(bignum n, uint32_t bits, long int len)
 {
   uint32_t i, i2;
 
@@ -227,7 +227,7 @@ bits));
   n[i] = n[i] >> bits;
 }
 
-static void shl_bignum(bignum n, uint32_t bits, uint32_t len)
+static void ShlBignum(bignum n, uint32_t bits, uint32_t len)
 {
   uint32_t i, i2;
 
@@ -243,7 +243,7 @@ bits));
   n[0] <<= bits;
 }
 
-static uint32_t sub_bignum(bignum dest, bignum src1, bignum src2, uint32_t carry, uint32_t len)
+static uint32_t SubBignum(bignum dest, bignum src1, bignum src2, uint32_t carry, uint32_t len)
 {
   uint32_t i1, i2;
 
@@ -260,15 +260,15 @@ static uint32_t sub_bignum(bignum dest, bignum src1, bignum src2, uint32_t carry
   return carry;
 }
 
-static void inv_bignum(bignum n1, bignum n2, uint32_t len)
+static void InvBignum(bignum n1, bignum n2, uint32_t len)
 {
   bignum n_tmp;
   uint32_t n2_uint8_tlen, bit;
   long int n2_bitlen;
 
-  init_bignum(n_tmp, 0, len);
-  init_bignum(n1, 0, len);
-  n2_bitlen = bitlen_bignum(n2, len);
+  InitBignum(n_tmp, 0, len);
+  InitBignum(n1, 0, len);
+  n2_bitlen = BitlenBignum(n2, len);
   bit = ((uint32_t)1) << (n2_bitlen % 32);
   n1 += ((n2_bitlen + 32) / 32) - 1;
   n2_uint8_tlen = ((n2_bitlen - 1) / 32) * 4;
@@ -276,9 +276,9 @@ static void inv_bignum(bignum n1, bignum n2, uint32_t len)
 
   while (n2_bitlen > 0) {
     n2_bitlen--;
-    shl_bignum(n_tmp, 1, len);
-    if (cmp_bignum(n_tmp, n2, len) != -1) {
-      sub_bignum(n_tmp, n_tmp, n2, 0, len);
+    ShlBignum(n_tmp, 1, len);
+    if (CmpBignum(n_tmp, n2, len) != -1) {
+      SubBignum(n_tmp, n_tmp, n2, 0, len);
       *n1 |= bit;
     }
     bit >>= 1;
@@ -287,29 +287,29 @@ static void inv_bignum(bignum n1, bignum n2, uint32_t len)
       bit = 0x80000000;
     }
   }
-  init_bignum(n_tmp, 0, len);
+  InitBignum(n_tmp, 0, len);
 }
 
-static void inc_bignum(bignum n, uint32_t len)
+static void IncBignum(bignum n, uint32_t len)
 {
   while ((++*n == 0) && (--len > 0)) n++;
 }
 
-static void init_two_dw(bignum n, uint32_t len)
+static void InitTwoDw(bignum n, uint32_t len)
 {
-    mov_bignum(glob1, n, len);
-    glob1_bitlen = bitlen_bignum(glob1, len);
+    MovBignum(glob1, n, len);
+    glob1_bitlen = BitlenBignum(glob1, len);
     glob1_len_x2 = (glob1_bitlen + 15) / 16;
-    mov_bignum(glob1_hi, glob1 + len_bignum(glob1, len) - 2, 2);
-    glob1_hi_bitlen = bitlen_bignum(glob1_hi, 2) - 32;
-    shr_bignum(glob1_hi, glob1_hi_bitlen, 2);
-    inv_bignum(glob1_hi_inv, glob1_hi, 2);
-    shr_bignum(glob1_hi_inv, 1, 2);
+    MovBignum(glob1_hi, glob1 + LenBignum(glob1, len) - 2, 2);
+    glob1_hi_bitlen = BitlenBignum(glob1_hi, 2) - 32;
+    ShrBignum(glob1_hi, glob1_hi_bitlen, 2);
+    InvBignum(glob1_hi_inv, glob1_hi, 2);
+    ShrBignum(glob1_hi_inv, 1, 2);
     glob1_hi_bitlen = (glob1_hi_bitlen + 15) % 16 + 1;
-    inc_bignum(glob1_hi_inv, 2);
-    if (bitlen_bignum(glob1_hi_inv, 2) > 32)
+    IncBignum(glob1_hi_inv, 2);
+    if (BitlenBignum(glob1_hi_inv, 2) > 32)
     {
-        shr_bignum(glob1_hi_inv, 1, 2);
+        ShrBignum(glob1_hi_inv, 1, 2);
         glob1_hi_bitlen--;
     }
     //glob1_hi_inv_lo = *(uint16_t *)glob1_hi_inv;
@@ -319,7 +319,7 @@ static void init_two_dw(bignum n, uint32_t len)
 
 }
 
-static void mul_bignum_uint16_t(bignum n1, bignum n2, uint32_t mul, uint32_t len)
+static void MulBignumUint16(bignum n1, bignum n2, uint32_t mul, uint32_t len)
 {
   uint32_t i, tmp;
 
@@ -334,32 +334,32 @@ static void mul_bignum_uint16_t(bignum n1, bignum n2, uint32_t mul, uint32_t len
   *(uint16_t *)n1 += tmp;
 }
 
-static void mul_bignum(bignum dest, bignum src1, bignum src2, uint32_t len)
+static void MulBignum(bignum dest, bignum src1, bignum src2, uint32_t len)
 {
   uint32_t i;
 
-  init_bignum(dest, 0, len*2);
+  InitBignum(dest, 0, len*2);
   for (i = 0; i < len*2; i++) {
-    mul_bignum_uint16_t(dest, src1, *(uint16_t *)src2, len*2);
+    MulBignumUint16(dest, src1, *(uint16_t *)src2, len*2);
     src2 = (uint32_t *)(((uint16_t *)src2) + 1);
     dest = (uint32_t *)(((uint16_t *)dest) + 1);
   }
 }
 
-static void not_bignum(bignum n, uint32_t len)
+static void NotBignum(bignum n, uint32_t len)
 {
   uint32_t i;
   //for (i = 0; i < len; i++) *(n++) = ~(*n);
   for (i = 0; i < len; i++) n[i] = ~n[i];
 }
 
-static void neg_bignum(bignum n, uint32_t len)
+static void NegBignum(bignum n, uint32_t len)
 {
-  not_bignum(n, len);
-  inc_bignum(n, len);
+  NotBignum(n, len);
+  IncBignum(n, len);
 }
 
-static uint32_t get_muluint16_t(bignum n)
+static uint32_t GetMulUint16(bignum n)
 {
   uint32_t i;
   uint16_t *wn;
@@ -374,50 +374,50 @@ static uint32_t get_muluint16_t(bignum n)
   return i & 0xffff;
 }
 
-static void dec_bignum(bignum n, uint32_t len)
+static void DecBignum(bignum n, uint32_t len)
 {
     while ((--*n == 0xffffffff) && (--len > 0))
         n++;
 }
 
-static void calc_a_bignum(bignum n1, bignum n2, bignum n3, uint32_t len)
+static void CalcABignum(bignum n1, bignum n2, bignum n3, uint32_t len)
 {
     uint32_t g2_len_x2, len_diff;
     uint16_t *esi, *edi;
     uint16_t tmp;
 
-    mul_bignum(glob2, n2, n3, len);
+    MulBignum(glob2, n2, n3, len);
     glob2[len*2] = 0;
-    g2_len_x2 = len_bignum(glob2, len*2+1)*2;
+    g2_len_x2 = LenBignum(glob2, len*2+1)*2;
     if (g2_len_x2 >= glob1_len_x2) {
-        inc_bignum(glob2, len*2+1);
-        neg_bignum(glob2, len*2+1);
+        IncBignum(glob2, len*2+1);
+        NegBignum(glob2, len*2+1);
         len_diff = g2_len_x2 + 1 - glob1_len_x2;
         esi = ((uint16_t *)glob2) + (1 + g2_len_x2 - glob1_len_x2);
         edi = ((uint16_t *)glob2) + (g2_len_x2 + 1);
         for (; len_diff != 0; len_diff--) {
             edi--;
-            tmp = get_muluint16_t((uint32_t *)edi);
+            tmp = GetMulUint16((uint32_t *)edi);
             esi--;
             if (tmp > 0) {
-                mul_bignum_uint16_t((uint32_t *)esi, glob1, tmp, 2*len);
+                MulBignumUint16((uint32_t *)esi, glob1, tmp, 2*len);
                 if ((*edi & 0x8000) == 0) {
-                    if (sub_bignum((uint32_t *)esi, (uint32_t *)esi, glob1, 0, len)) (*edi)--;
+                    if (SubBignum((uint32_t *)esi, (uint32_t *)esi, glob1, 0, len)) (*edi)--;
                 }
             }
         }
-        neg_bignum(glob2, len);
-        dec_bignum(glob2, len);
+        NegBignum(glob2, len);
+        DecBignum(glob2, len);
     }
-    mov_bignum(n1, glob2, len);
+    MovBignum(n1, glob2, len);
 }
 
-static void clear_tmp_vars(uint32_t len)
+static void ClearTmpVars(uint32_t len)
 {
-    init_bignum(glob1, 0, len);
-    init_bignum(glob2, 0, len);
-    init_bignum(glob1_hi_inv, 0, 4);
-    init_bignum(glob1_hi, 0, 4);
+    InitBignum(glob1, 0, len);
+    InitBignum(glob2, 0, len);
+    InitBignum(glob1_hi_inv, 0, 4);
+    InitBignum(glob1_hi, 0, 4);
     glob1_bitlen = 0;
     glob1_hi_bitlen = 0;
     glob1_len_x2 = 0;
@@ -425,20 +425,20 @@ static void clear_tmp_vars(uint32_t len)
     glob1_hi_inv_hi = 0;
 }
 
-static void calc_a_key(bignum n1, bignum n2, bignum key2, bignum key1, uint32_t len)
+static void CalcAKey(bignum n1, bignum n2, bignum key2, bignum key1, uint32_t len)
 {
     bignum n_tmp;
     uint32_t key2_len, key1_len, key2_bitlen, bit_mask;
     
-    init_bignum(n1, 1, len);
-    key1_len = len_bignum(key1, len);
-    init_two_dw(key1, key1_len);
-    key2_bitlen = bitlen_bignum(key2, key1_len);
+    InitBignum(n1, 1, len);
+    key1_len = LenBignum(key1, len);
+    InitTwoDw(key1, key1_len);
+    key2_bitlen = BitlenBignum(key2, key1_len);
     key2_len = (key2_bitlen + 31) / 32;
     bit_mask = (((uint32_t)1) << ((key2_bitlen - 1) % 32)) >> 1;
     key2 += key2_len - 1;
     key2_bitlen--;
-    mov_bignum(n1, n2, key1_len);
+    MovBignum(n1, n2, key1_len);
     while (--key2_bitlen != (uint32_t)-1)
     {
         if (bit_mask == 0)
@@ -446,30 +446,30 @@ static void calc_a_key(bignum n1, bignum n2, bignum key2, bignum key1, uint32_t 
             bit_mask = 0x80000000;
             key2--;
         }
-        calc_a_bignum(n_tmp, n1, n1, key1_len);
+        CalcABignum(n_tmp, n1, n1, key1_len);
         if (*key2 & bit_mask)
-            calc_a_bignum(n1, n_tmp, n2, key1_len);
+            CalcABignum(n1, n_tmp, n2, key1_len);
         else
-            mov_bignum(n1, n_tmp, key1_len);
+            MovBignum(n1, n_tmp, key1_len);
         bit_mask >>= 1;
     }
-    init_bignum(n_tmp, 0, key1_len);
-    clear_tmp_vars(len);
+    InitBignum(n_tmp, 0, key1_len);
+    ClearTmpVars(len);
 }
 
-static void process_predata(const uint8_t* pre, uint32_t pre_len, uint8_t *buf)
+static void ProcessPredata(const uint8_t* pre, uint32_t pre_len, uint8_t *buf)
 {
     bignum n2, n3;
     const uint32_t a = (pubkey.len - 1) / 8;
     while (a + 1 <= pre_len)
     {
-        init_bignum(n2, 0, 64);
+        InitBignum(n2, 0, 64);
         memmove(n2, pre, a + 1);
         
         //CryptoPP::Integer blk((uint8_t*)n2, a + 1);
         //std::cout << "pre-enc block\n" << std::hex << blk << "\n";
         
-        calc_a_key(n3, n2, pubkey.key2, pubkey.key1, 64);
+        CalcAKey(n3, n2, pubkey.key2, pubkey.key1, 64);
         
         //CryptoPP::Integer blk2((uint8_t*)n3, a);
         //std::cout << "post-enc block\n" << std::hex << blk2 << "\n\n";
@@ -482,12 +482,12 @@ static void process_predata(const uint8_t* pre, uint32_t pre_len, uint8_t *buf)
     }
 }
 
-void get_blowfish_key(const uint8_t* s, uint8_t* d)
+void GetBlowfishKey(const uint8_t* s, uint8_t* d)
 {
     static bool public_key_initialized = false;
     if (!public_key_initialized)
     {
-        init_pubkey();
+        InitPubkey();
         public_key_initialized = true;
     }
     
@@ -496,20 +496,21 @@ void get_blowfish_key(const uint8_t* s, uint8_t* d)
     //std::cout << std::hex << pubexp << "\n\n";
     
     uint8_t key[256];
-    process_predata(s, len_predata(), key);
+    ProcessPredata(s, LenPredata(), key);
     memcpy(d, key, 56);
 }
 
-void give_blowfish_key(const uint8_t* s, uint8_t* d)
+void GiveBlowfishKey(const uint8_t* s, uint8_t* d)
 {
     static bool public_key_initialized = false;
     if (!public_key_initialized)
     {
-        init_prvkey();
+        InitPrvkey();
         public_key_initialized = true;
     }
     
     uint8_t key[256];
-    process_predata(s, len_predata_gen(), key);
+    ProcessPredata(s, LenPredataGen(), key);
     memcpy(d, key, 80);
 }
+

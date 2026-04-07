@@ -17,9 +17,10 @@
 #endif
 
 
-void get_blowfish_key(const uint8_t* s, uint8_t* d);
-void give_blowfish_key(const uint8_t* s, uint8_t* d);
+void GetBlowfishKey(const uint8_t* s, uint8_t* d);
+void GiveBlowfishKey(const uint8_t* s, uint8_t* d);
 
 
 #endif	/* MIX_DEXODER_H */
+
 

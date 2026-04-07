@@ -4,21 +4,21 @@
 #include <iostream>
 #include <vector>
 
-const char MixLMD::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
+const char MixLmd::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 
-MixLMD::MixLMD(t_game game)
+MixLmd::MixLmd(Game game)
 {
     m_game_type = game;
     m_size = 52;
-    addName(getDBName());
-    m_id = MixID::idGen(m_game_type, getDBName());
+    AddName(GetDbName());
+    m_id = MixId::IdGen(m_game_type, GetDbName());
 }
 
-void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
+void MixLmd::ReadDb(std::fstream &fh, uint32_t offset, uint32_t size)
 {
     m_name_map.clear();
     m_size = 52;
-    addName(getDBName());
+    AddName(GetDbName());
 
     std::vector<char> data(size);
     fh.seekg(offset, std::ios_base::beg);
@@ -39,16 +39,16 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     while (count--) {
         //get the id for this filename
         id_data = cursor;
-        int32_t id = MixID::idGen(m_game_type, id_data);
+        int32_t id = MixId::IdGen(m_game_type, id_data);
         //check if its the LMD itself, if it is skip add logic
         if(id == m_id) {
-            cursor += getDBName().length() + 1;
+            cursor += GetDbName().length() + 1;
             continue;
         }
         
-        std::pair<t_id_iter,bool> rv;
+        std::pair<IdIterator,bool> rv;
         cursor += id_data.length() + 1;
-        rv = m_name_map.insert(t_id_pair(id, id_data));
+        rv = m_name_map.insert(IdPair(id, id_data));
         if(rv.second) {
             m_size += id_data.length() + 1;
         } else {
@@ -58,7 +58,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     }
 }
 
-void MixLMD::writeDB(std::fstream& fh)
+void MixLmd::WriteDb(std::fstream& fh)
 {    
     // this is the rest of the header that follows xcc_id
     // two 0 constants are xcc type and xcc version according to xcc spec.
@@ -69,26 +69,26 @@ void MixLMD::writeDB(std::fstream& fh)
     //rest of header
     fh.write(reinterpret_cast<const char*> (xcc_head), sizeof(xcc_head));
     //filenames
-    for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
+    for(IdIterator it = m_name_map.begin(); it != m_name_map.end(); ++it) {
         fh.write(it->second.c_str(), it->second.size() + 1);
     }
 }
 
-std::string MixLMD::getName(int32_t id) const
+std::string MixLmd::GetName(int32_t id) const
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIterator rv = m_name_map.find(id);
     
     if(rv != m_name_map.end()){
         return rv->second;
     }
     
-    return "[id]" + MixID::idStr(id);
+    return "[id]" + MixId::IdStr(id);
 }
 
-bool MixLMD::addName(const std::string& name)
+bool MixLmd::AddName(const std::string& name)
 {
-    std::pair<t_id_iter,bool> rv;
-    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type, name), name));
+    std::pair<IdIterator,bool> rv;
+    rv = m_name_map.insert(IdPair(MixId::IdGen(m_game_type, name), name));
     if(rv.second) {
         m_size += name.length() + 1;
         return true;
@@ -100,14 +100,14 @@ bool MixLMD::addName(const std::string& name)
     return false;
 }
 
-bool MixLMD::deleteName(const std::string& name)
+bool MixLmd::DeleteName(const std::string& name)
 {
-    return deleteName(MixID::idGen(m_game_type, name));
+    return DeleteName(MixId::IdGen(m_game_type, name));
 }
 
-bool MixLMD::deleteName(int32_t id)
+bool MixLmd::DeleteName(int32_t id)
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIterator rv = m_name_map.find(id);
     if(rv == m_name_map.end()){
         std::cout << "Name not found in local DB." << std::endl;
         return false;
@@ -117,3 +117,4 @@ bool MixLMD::deleteName(int32_t id)
     m_name_map.erase(id);
     return true;
 }
+

@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <algorithm>
 
-namespace MixID 
+namespace MixId 
 {
     namespace
     {
@@ -44,9 +44,9 @@ namespace MixID
         
         const char* marker = "[id]";
         
-        uint32_t do_block(const void* data, int size);
+        uint32_t DoBlock(const void* data, int size);
         
-        uint32_t do_block(const void* data, int size)
+        uint32_t DoBlock(const void* data, int size)
         {   
             uint32_t rv = 0;
             const uint8_t* r = reinterpret_cast<const uint8_t*>(data);
@@ -58,16 +58,16 @@ namespace MixID
         }
     }
 
-    int32_t idGen(t_game game, const std::string& fname_in) 
+    int32_t IdGen(Game game, const std::string& fname_in) 
     {
         std::string fname = fname_in;
         //if the filename starts [id] treat next 8 chars as an id to convert to int
-        if(isIdName(fname)){
-            return strId(fname.substr(4, 8));
+        if(IsIdName(fname)){
+            return StrId(fname.substr(4, 8));
         }
         std::transform(fname.begin(), fname.end(), fname.begin(),
                 (int(*)(int)) toupper); // convert to uppercase
-        if (game <= game_ra) { // for TD and RA
+        if (game <= GameRa) { // for TD and RA
             int i = 0;
             uint32_t id = 0;
             int l = fname.length(); // length of the filename
@@ -92,18 +92,18 @@ namespace MixID
                     fname += fname[a << 2];
             }
 
-            return do_block(fname.c_str(), fname.length());
+            return DoBlock(fname.c_str(), fname.length());
         }
     }
     
-    std::string idStr(int32_t id)
+    std::string IdStr(int32_t id)
     {
         std::stringstream os;
         os << std::setw(8) << std::setfill('0') << std::hex << id << std::dec;
         return os.str();
     }
     
-    std::string idStr(const char* id, uint32_t size)
+    std::string IdStr(const char* id, uint32_t size)
     {
         //char const hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', 
         //                             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -118,7 +118,7 @@ namespace MixID
         return os.str();
     }
     
-    int32_t strId(const std::string& hex)
+    int32_t StrId(const std::string& hex)
     {
         int32_t rv;   
         std::stringstream ss;
@@ -127,8 +127,9 @@ namespace MixID
         return rv;
     }
     
-    bool isIdName(const std::string& fname)
+    bool IsIdName(const std::string& fname)
     {
         return !strncmp(fname.c_str(), marker, strlen(marker));
     }
 }
+

@@ -3,14 +3,14 @@
 #include <cstring>
 #include <iostream>
 
-MixGameDB::MixGameDB(t_game game) :
+MixGameDb::MixGameDb(Game game) :
 m_size(0),
 m_entries(0),
 m_game_type(game)
 {
 }
 
-void MixGameDB::readDB(const char* data, uint32_t offset)
+void MixGameDb::ReadDb(const char* data, uint32_t offset)
 {
     m_name_map.clear();
     m_size = 0;
@@ -23,9 +23,9 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
-    t_id_data id_data;
+    IdData id_data;
     for(uint32_t i = 0; i != m_entries; i++){
-        std::pair<t_id_iter,bool> rv;
+        std::pair<IdIterator,bool> rv;
         
         //data is incremented and read twice, once for filename, once for desc.
         id_data.name = data;
@@ -35,12 +35,12 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
         data += id_data.description.length() + 1;
         m_size += id_data.description.length() + 1;
         //attempt to insert data and figure out if we had a collision.
-        rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
+        rv = m_name_map.insert(IdPair(MixId::IdGen(m_game_type,
                         id_data.name), id_data));
     }
 }
 
-void MixGameDB::writeDB(std::fstream& fh)
+void MixGameDb::WriteDb(std::fstream& fh)
 {
     //first record how many entries we have for this db.
     
@@ -49,31 +49,31 @@ void MixGameDB::writeDB(std::fstream& fh)
     }
     fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
-    for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
+    for(IdIterator it = m_name_map.begin(); it != m_name_map.end(); ++it) {
         fh.write(it->second.name.c_str(), it->second.name.size() + 1);
         fh.write(it->second.description.c_str(), it->second.description.size() + 1);
     }
 }
 
-std::string MixGameDB::getName(int32_t id) const
+std::string MixGameDb::GetName(int32_t id) const
 {
-    t_id_iter rv = m_name_map.find(id);
+    IdIterator rv = m_name_map.find(id);
     
     if(rv != m_name_map.end()){
         return rv->second.name;
     }
     
-    return "[id]" + MixID::idStr(id);
+    return "[id]" + MixId::IdStr(id);
 }
 
-bool MixGameDB::addName(const std::string& name, const std::string& description)
+bool MixGameDb::AddName(const std::string& name, const std::string& description)
 {
-    t_id_data id_data;
+    IdData id_data;
     id_data.name = name;
     id_data.description = description;
     
-    std::pair<t_id_iter,bool> rv;
-    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
+    std::pair<IdIterator,bool> rv;
+    rv = m_name_map.insert(IdPair(MixId::IdGen(m_game_type,
                     name), id_data));
     if(rv.second) {
         m_size += name.length() + 1;
@@ -88,8 +88,9 @@ bool MixGameDB::addName(const std::string& name, const std::string& description)
     return false;
 }
 
-bool MixGameDB::deleteName(const std::string& name)
+bool MixGameDb::DeleteName(const std::string& name)
 {
-    std::cout << name << " deleteName not implemented yet" << std::endl;
+    std::cout << name << " DeleteName not implemented yet" << std::endl;
     return false;
 }
+

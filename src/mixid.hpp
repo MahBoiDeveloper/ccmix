@@ -11,22 +11,23 @@
 
 typedef enum 
 { 
-    game_td,
-    game_ra,
-    game_ts,
-    game_dune2,
-    game_dune2000,
-    game_ra2
-} t_game;
+    GameTd,
+    GameRa,
+    GameTs,
+    GameDune2,
+    GameDune2000,
+    GameRa2
+} Game;
 
-namespace MixID
+namespace MixId
 {
-    int32_t idGen(t_game game, const std::string& fname);
-    std::string idStr(int32_t id);
-    std::string idStr(const char* id, uint32_t size);
-    int32_t strId(const std::string& hex);
-    bool isIdName(const std::string& fname);
+    int32_t IdGen(Game game, const std::string& fname);
+    std::string IdStr(int32_t id);
+    std::string IdStr(const char* id, uint32_t size);
+    int32_t StrId(const std::string& hex);
+    bool IsIdName(const std::string& fname);
 }
 
 #endif	/* MIXID_H */
+
 

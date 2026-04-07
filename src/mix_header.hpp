@@ -14,15 +14,15 @@
 #include <fstream>
 #include <map>
 
-struct t_index_info
+struct IndexInfo
 {
     uint32_t offset;    // offset from start of body
     uint32_t size;      // size of this internal file
 };
 
-typedef std::map<int32_t, t_index_info> t_mix_index;
-typedef std::pair<int32_t, t_index_info> t_mix_entry;
-typedef std::map<int32_t, t_index_info>::iterator t_mix_index_iter;
+typedef std::map<int32_t, IndexInfo> MixIndex;
+typedef std::pair<int32_t, IndexInfo> MixEntry;
+typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
 
 /**
  * @brief Mix archive header.
@@ -84,55 +84,56 @@ typedef std::map<int32_t, t_index_info>::iterator t_mix_index_iter;
 class MixHeader
 {
 public:
-    MixHeader(t_game game);
-    bool readHeader(std::fstream &fh);
-    bool readKeySource(std::fstream &fh);
-    bool writeHeader(std::fstream &fh);
-    bool addEntry(int32_t id, uint32_t size);
-    bool removeEntry(int32_t id, bool adjust);
-    t_index_info getEntry(int32_t id) const;
-    bool getHasChecksum() const { return m_has_checksum; }
-    void setHasChecksum();
-    void clearHasChecksum();
-    bool getIsEncrypted() const { return m_is_encrypted; }
-    void setIsEncrypted();
-    void clearIsEncrypted();
-    t_game getGame() const { return m_game_type; }
+    MixHeader(Game game);
+    bool ReadHeader(std::fstream &fh);
+    bool ReadKeySource(std::fstream &fh);
+    bool WriteHeader(std::fstream &fh);
+    bool AddEntry(int32_t id, uint32_t size);
+    bool RemoveEntry(int32_t id, bool adjust);
+    IndexInfo GetEntry(int32_t id) const;
+    bool GetHasChecksum() const { return m_has_checksum; }
+    void SetHasChecksum();
+    void ClearHasChecksum();
+    bool GetIsEncrypted() const { return m_is_encrypted; }
+    void SetIsEncrypted();
+    void ClearIsEncrypted();
+    Game GetGame() const { return m_game_type; }
     //void printContents();
     
-    uint32_t getHeaderSize() const { return m_header_size; }
-    uint32_t getBodySize() const { return m_body_size; }
-    void setBodySize(uint32_t size) { m_body_size = size; }
-    uint16_t getFileCount() const { return m_file_count; }
-    t_mix_index_iter getBegin() { return m_index.begin(); }
-    t_mix_index_iter getEnd() { return m_index.end(); }
-    const char* getKey() const { return m_key; }
-    const char* getKeySource() const { return m_keysource; }
+    uint32_t GetHeaderSize() const { return m_header_size; }
+    uint32_t GetBodySize() const { return m_body_size; }
+    void SetBodySize(uint32_t size) { m_body_size = size; }
+    uint16_t GetFileCount() const { return m_file_count; }
+    MixIndexIterator GetBegin() { return m_index.begin(); }
+    MixIndexIterator GetEnd() { return m_index.end(); }
+    const char* GetKey() const { return m_key; }
+    const char* GetKeySource() const { return m_keysource; }
     
 private:
-    void setKey();
-    void setKeySource();
+    void SetKey();
+    void SetKeySource();
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
     
-    t_game m_game_type;
+    Game m_game_type;
     uint16_t m_file_count;
     uint32_t m_body_size;
     uint32_t m_header_flags;
     uint32_t m_header_size;
     bool m_has_checksum;
     bool m_is_encrypted;
-    t_mix_index m_index;
-    t_mix_index m_old_index;
+    MixIndex m_index;
+    MixIndex m_old_index;
     char m_keysource[80];
     char m_key[56];
     
-    void reset();
-    bool readEncrypted(std::fstream &fh);
-    bool writeEncrypted(std::fstream &fh);
-    bool readUnEncrypted(std::fstream &fh);
-    bool writeUnEncrypted(std::fstream &fh);
-    //void setGame(t_game game); //{ m_game_type = game; }
+    void Reset();
+    bool ReadEncrypted(std::fstream &fh);
+    bool WriteEncrypted(std::fstream &fh);
+    bool ReadUnencrypted(std::fstream &fh);
+    bool WriteUnencrypted(std::fstream &fh);
+    //void setGame(Game game); //{ m_game_type = game; }
 };
 
 #endif	/* MIX_HEADER_H */
+

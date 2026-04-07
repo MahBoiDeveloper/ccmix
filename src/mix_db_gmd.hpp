@@ -15,21 +15,22 @@
 #include <map>
 
 // Callers job to ensure file handles are valid and in usable state.
-class MixGMD
+class MixGmd
 {
 public:
-    MixGMD();
-    void readDB(std::fstream &fh);
-    void writeDB(std::fstream &fh);
-    std::string getName(t_game game, int32_t id) const;
-    bool addName(t_game game, const std::string& name, const std::string& desc);
-    bool deleteName(t_game game, const std::string& name);
+    MixGmd();
+    void ReadDb(std::fstream &fh);
+    void WriteDb(std::fstream &fh);
+    std::string GetName(Game game, int32_t id) const;
+    bool AddName(Game game, const std::string& name, const std::string& desc);
+    bool DeleteName(Game game, const std::string& name);
 private:
-    MixGameDB m_td_list;
-    MixGameDB m_ra_list;
-    MixGameDB m_ts_list;
-    MixGameDB m_ra2_list;
-    std::vector<MixGameDB*> m_db_array;
+    MixGameDb m_td_list;
+    MixGameDb m_ra_list;
+    MixGameDb m_ts_list;
+    MixGameDb m_ra2_list;
+    std::vector<MixGameDb*> m_db_array;
 };
 
 #endif	/* MIX_DB_GMD_H */
+

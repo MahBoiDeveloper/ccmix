@@ -32,7 +32,7 @@ using CryptoPP::Blowfish;
 namespace
 {
     template <typename T>
-    T bufferValue(const char* buffer)
+    T BufferValue(const char* buffer)
     {
         T value = T();
         std::memcpy(&value, buffer, sizeof(T));
@@ -40,19 +40,19 @@ namespace
     }
 }
 
-MixHeader::MixHeader(t_game game) :
+MixHeader::MixHeader(Game game) :
 mix_checksum(0x00010000),
 mix_encrypted(0x00020000)
 {
     m_game_type = game;
     std::memset(m_keysource, 0, sizeof(m_keysource));
     std::memset(m_key, 0, sizeof(m_key));
-    reset();
+    Reset();
     //seed random number for generating random keys
     srand(time(NULL));
 }
 
-void MixHeader::reset()
+void MixHeader::Reset()
 {
     m_file_count = 0;
     m_body_size = 0;
@@ -63,9 +63,9 @@ void MixHeader::reset()
     m_index.clear();
 }
 
-bool MixHeader::readHeader(std::fstream &fh)
+bool MixHeader::ReadHeader(std::fstream &fh)
 {
-    reset();
+    Reset();
     fh.seekg(0, std::ios::beg);
     //read first 6 bytes, determine if we have td mix or not.
     char flagbuff[6] = {0};
@@ -74,47 +74,47 @@ bool MixHeader::readHeader(std::fstream &fh)
         return false;
     }
     
-    //std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    //std::cout << MixId::IdStr(flagbuff, 6) << " Retrieved from header." << std::endl;
     
-    if(bufferValue<uint32_t>(flagbuff) == REN_SIG){
+    if(BufferValue<uint32_t>(flagbuff) == REN_SIG){
         std::cout << "Error, Renegade mix format not supported." << std::endl;
         return false;
     }
     
-    if(bufferValue<uint16_t>(flagbuff)) {
+    if(BufferValue<uint16_t>(flagbuff)) {
         if(m_game_type > 1){
-            //m_game_type = game_td;
-            std::cout << "Warning, header indicates mix is of type \"game_td\" "<<
+            //m_game_type = GameTd;
+            std::cout << "Warning, header indicates mix is of type \"GameTd\" "<<
                     " but isn't what you specified" << std::endl;
         }
         
-        m_file_count = bufferValue<uint16_t>(flagbuff);
-        m_body_size = bufferValue<uint32_t>(flagbuff + 2);
+        m_file_count = BufferValue<uint16_t>(flagbuff);
+        m_body_size = BufferValue<uint32_t>(flagbuff + 2);
         
-        return readUnEncrypted(fh);
+        return ReadUnencrypted(fh);
         
     } else {
         if(!m_game_type){
             std::cout << "Warning, game type is td but header is new format." << std::endl;
         }
         //lets work out what kind of header we have
-        m_header_flags = bufferValue<int32_t>(flagbuff);
+        m_header_flags = BufferValue<int32_t>(flagbuff);
         m_has_checksum = m_header_flags & mix_checksum;
         m_is_encrypted = m_header_flags & mix_encrypted;
                 
         if(m_is_encrypted){
-            return readEncrypted(fh);
+            return ReadEncrypted(fh);
         } else {
-            return readUnEncrypted(fh);
+            return ReadUnencrypted(fh);
         }
     }
     return false;
 }
 
-bool MixHeader::readUnEncrypted(std::fstream &fh)
+bool MixHeader::ReadUnencrypted(std::fstream &fh)
 {
-    t_mix_entry entry;
-    std::pair<t_mix_index_iter,bool> rv;
+    MixEntry entry;
+    std::pair<MixIndexIterator,bool> rv;
     
     //new format won't have filecount yet
     if(m_file_count) { 
@@ -132,7 +132,7 @@ bool MixHeader::readUnEncrypted(std::fstream &fh)
     //read entries
     for (uint16_t i = 0; i < m_file_count; i++) {
         fh.read(reinterpret_cast<char*>(&entry.first), sizeof(int32_t));
-        fh.read(reinterpret_cast<char*>(&entry.second), sizeof(t_index_info));
+        fh.read(reinterpret_cast<char*>(&entry.second), sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
             std::cout << "Error reading header, duplicate ID" << std::endl;
@@ -142,10 +142,10 @@ bool MixHeader::readUnEncrypted(std::fstream &fh)
     return true;
 }
 
-bool MixHeader::readEncrypted(std::fstream& fh)
+bool MixHeader::ReadEncrypted(std::fstream& fh)
 {
-    t_mix_entry entry;
-    std::pair<t_mix_index_iter,bool> rv;
+    MixEntry entry;
+    std::pair<MixIndexIterator,bool> rv;
     
     ECB_Mode< Blowfish >::Decryption blfish;
     int block_count;
@@ -156,7 +156,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     
     //read keysource to obtain blowfish key
     //fh.seekg(4, std::ios::beg);
-    readKeySource(fh);
+    ReadKeySource(fh);
     blfish.SetKey(reinterpret_cast<uint8_t*>(m_key), 56);
     
     //read first block to get file count, needed to calculate header size
@@ -190,7 +190,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
         memcpy(reinterpret_cast<char*>(&entry.first), pindbuf + i * 12,
                sizeof(int32_t));
         memcpy(reinterpret_cast<char*>(&entry.second), pindbuf + 4 + i * 12,
-               sizeof(t_index_info));
+               sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
             std::cout << "Error reading header, duplicate ID" << std::endl;
@@ -201,7 +201,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     return true;
 }
 
-bool MixHeader::readKeySource(std::fstream& fh)
+bool MixHeader::ReadKeySource(std::fstream& fh)
 {
     if(!fh.is_open()) return false;
     
@@ -212,7 +212,7 @@ bool MixHeader::readKeySource(std::fstream& fh)
     if (fh.gcount() != 4) {
         return false;
     }
-    int32_t flags = bufferValue<int32_t>(flagbuff);
+    int32_t flags = BufferValue<int32_t>(flagbuff);
     
     if(flags != mix_encrypted && flags != mix_encrypted + mix_checksum) {
         std::cout << "key_source not suitable." << std::endl;
@@ -221,11 +221,11 @@ bool MixHeader::readKeySource(std::fstream& fh)
     
     fh.read(m_keysource, 80);
     //sets the blowfish key from the keysource
-    setKey();
+    SetKey();
     return true;
 }
 
-void MixHeader::setKey()
+void MixHeader::SetKey()
 {
     //need this for cryptopp as it uses bigendian big int, game uses little.
     //temp buffer to flip the keysource and final key
@@ -292,7 +292,7 @@ void MixHeader::setKey()
 }
 
 //This function is called by setEncrypted and generated a new key
-void MixHeader::setKeySource()
+void MixHeader::SetKeySource()
 {
     //buffer for flipping the array
     uint8_t keybuf[80];
@@ -303,7 +303,7 @@ void MixHeader::setKeySource()
     RSA::PrivateKey rsakey;
     rsakey.Initialize(Integer(PUBKEY), Integer(PRVKEY), Integer("0x10001"));
     
-    if(m_game_type > game_ra) {
+    if(m_game_type > GameRa) {
         byte1 = 0x18;
         byte2 = 0xBB;
     } else {
@@ -353,18 +353,18 @@ void MixHeader::setKeySource()
     }
 }
 
-bool MixHeader::writeHeader(std::fstream& fh)
+bool MixHeader::WriteHeader(std::fstream& fh)
 {   
     //make sure we are at the start of the file stream we were passed
     fh.seekp(0, std::ios::beg);
     if(m_is_encrypted){
-        return writeEncrypted(fh);
+        return WriteEncrypted(fh);
     } else {
-        return writeUnEncrypted(fh);
+        return WriteUnencrypted(fh);
     }
 }
 
-bool MixHeader::writeUnEncrypted(std::fstream& fh)
+bool MixHeader::WriteUnencrypted(std::fstream& fh)
 {
     //write flags if supported by game format
     if(m_game_type) fh.write(reinterpret_cast<const char*>(&m_header_flags), 4);
@@ -374,14 +374,14 @@ bool MixHeader::writeUnEncrypted(std::fstream& fh)
     fh.write(reinterpret_cast<const char*>(&m_body_size), 4);
     
     //write index, first is id, second is struct of offset and size
-    for(t_mix_index_iter it = m_index.begin(); it != m_index.end(); ++it) {
+    for(MixIndexIterator it = m_index.begin(); it != m_index.end(); ++it) {
         fh.write(reinterpret_cast<const char*>(&(it->first)), 4);
         fh.write(reinterpret_cast<const char*>(&(it->second)), 8);
     }
     return true;
 }
 
-bool MixHeader::writeEncrypted(std::fstream& fh)
+bool MixHeader::WriteEncrypted(std::fstream& fh)
 {
     ECB_Mode< Blowfish >::Encryption blfish;
     //std::vector<char> block_buff(8);
@@ -414,7 +414,7 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     memcpy(pindbuf + offset, reinterpret_cast<char*>(&m_body_size), 4);
     offset += 4;
     
-    for(t_mix_index_iter it = m_index.begin(); it != m_index.end(); ++it) {
+    for(MixIndexIterator it = m_index.begin(); it != m_index.end(); ++it) {
         memcpy(pindbuf + offset, reinterpret_cast<const char*>(&(it->first)), 4);
         offset += 4;
         memcpy(pindbuf + offset, reinterpret_cast<const char*>(&(it->second)), 8);
@@ -437,11 +437,11 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     return true;
 }
 
-bool MixHeader::addEntry(int32_t id, uint32_t size)
+bool MixHeader::AddEntry(int32_t id, uint32_t size)
 {
-    t_index_info info;
-    t_mix_entry entry;
-    std::pair<t_mix_index_iter,bool> rv;
+    IndexInfo info;
+    MixEntry entry;
+    std::pair<MixIndexIterator,bool> rv;
     
     info.offset = m_body_size;
     info.size = size;
@@ -460,9 +460,9 @@ bool MixHeader::addEntry(int32_t id, uint32_t size)
     return true;
 }
 
-bool MixHeader::removeEntry(int32_t id, bool adjust)
+bool MixHeader::RemoveEntry(int32_t id, bool adjust)
 {
-    t_mix_index_iter old = m_index.find(id);
+    MixIndexIterator old = m_index.find(id);
     
     if(old == m_index.end()) {
         std::cout << "Element not found" << std::endl;
@@ -471,7 +471,7 @@ bool MixHeader::removeEntry(int32_t id, bool adjust)
     
     //if we adjust for compact, reduce offsets > removed to be - removed size
     if(adjust) {
-        for(t_mix_index_iter it = m_index.begin(); it != m_index.end(); ++it) {
+        for(MixIndexIterator it = m_index.begin(); it != m_index.end(); ++it) {
             if(it->second.offset > old->second.offset) {
                 it->second.offset -= old->second.size;
             }
@@ -486,15 +486,15 @@ bool MixHeader::removeEntry(int32_t id, bool adjust)
 }
 
 //Would there be a use for this?
-/*void MixHeader::setGame(t_game game)
+/*void MixHeader::setGame(Game game)
 {
-    t_game old = m_game_type
+    Game old = m_game_type
     m_game_type = game;
     
     //have we gone from new type header to old?
     if(old & !m_game_type) {
-        clearIsEncrypted();
-        clearHasChecksum();
+        ClearIsEncrypted();
+        ClearHasChecksum();
         m_header_size -= 4;
     } else if (!old & m_game_type) {
         m_header_size += 4;
@@ -502,20 +502,20 @@ bool MixHeader::removeEntry(int32_t id, bool adjust)
     
 }*/
 
-t_index_info MixHeader::getEntry(int32_t id) const
+IndexInfo MixHeader::GetEntry(int32_t id) const
 {
-    t_index_info rv;
+    IndexInfo rv;
     rv.offset = 0;
     rv.size = 0;
     
-    t_mix_index::const_iterator info = m_index.find(id);
+    MixIndex::const_iterator info = m_index.find(id);
     
     if(info != m_index.end()) rv = info->second;
     
     return rv;
 }
 
-void MixHeader::setHasChecksum()
+void MixHeader::SetHasChecksum()
 {
     if(m_game_type) {
         m_has_checksum = true;
@@ -523,7 +523,7 @@ void MixHeader::setHasChecksum()
     }
 }
 
-void MixHeader::clearHasChecksum()
+void MixHeader::ClearHasChecksum()
 {
     if(m_game_type) {
         m_has_checksum = false;
@@ -531,7 +531,7 @@ void MixHeader::clearHasChecksum()
     }
 }
 
-void MixHeader::setIsEncrypted()
+void MixHeader::SetIsEncrypted()
 {
     if(m_game_type) {
         uint32_t block_count = ((m_file_count * 12) + 6) / 8;
@@ -539,11 +539,11 @@ void MixHeader::setIsEncrypted()
         m_header_size = 84 + block_count * 8;
         m_is_encrypted = true;
         m_header_flags |= mix_encrypted;
-        setKeySource();
+        SetKeySource();
     }
 }
 
-void MixHeader::clearIsEncrypted()
+void MixHeader::ClearIsEncrypted()
 {
     if(m_game_type) {
         m_header_size = 10 + m_file_count * 12;
@@ -551,3 +551,4 @@ void MixHeader::clearIsEncrypted()
         m_header_flags &= ~(mix_encrypted);
     }
 }
+

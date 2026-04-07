@@ -15,33 +15,34 @@
 
 //GameDB databases represent internal databases in global mix database
 //each handled game has its own DB internally
-class MixGameDB
+class MixGameDb
 {
 public:
-    MixGameDB(t_game game);
-    void readDB(const char* data, uint32_t offset);
-    void writeDB(std::fstream &fh);
-    std::string getName(int32_t id) const;
-    bool addName(const std::string& name, const std::string& description);
-    bool deleteName(const std::string& name);
-    t_game getGame() const { return m_game_type; }
-    uint32_t getSize() const { return m_size; }
+    MixGameDb(Game game);
+    void ReadDb(const char* data, uint32_t offset);
+    void WriteDb(std::fstream &fh);
+    std::string GetName(int32_t id) const;
+    bool AddName(const std::string& name, const std::string& description);
+    bool DeleteName(const std::string& name);
+    Game GetGame() const { return m_game_type; }
+    uint32_t GetSize() const { return m_size; }
     
 private:
-    struct t_id_data {
+    struct IdData {
         std::string name;
         std::string description;
     };
     
-    typedef std::map<int32_t, t_id_data> t_id_map;
-    typedef std::pair<int32_t, t_id_data> t_id_pair;
-    typedef std::map<int32_t, t_id_data>::const_iterator t_id_iter;
+    typedef std::map<int32_t, IdData> IdMap;
+    typedef std::pair<int32_t, IdData> IdPair;
+    typedef std::map<int32_t, IdData>::const_iterator IdIterator;
     
-    t_id_map m_name_map;
+    IdMap m_name_map;
     uint32_t m_size;
     uint32_t m_entries;
-    t_game m_game_type;
+    Game m_game_type;
 };
 
 #endif	/* MIX_DB_GAMEDB_H */
+
 

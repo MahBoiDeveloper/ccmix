@@ -1,11 +1,11 @@
 #include "mix_db_gmd.hpp"
 #include <iostream>
 
-MixGMD::MixGMD() :
-m_td_list(game_td),
-m_ra_list(game_ra),
-m_ts_list(game_ts),
-m_ra2_list(game_ra2)
+MixGmd::MixGmd() :
+m_td_list(GameTd),
+m_ra_list(GameRa),
+m_ts_list(GameTs),
+m_ra2_list(GameRa2)
 {
     m_db_array.push_back(&m_td_list);
     m_db_array.push_back(&m_ra_list);
@@ -13,7 +13,7 @@ m_ra2_list(game_ra2)
     m_db_array.push_back(&m_ra2_list);
 }
 
-void MixGMD::readDB(std::fstream &fh)
+void MixGmd::ReadDb(std::fstream &fh)
 {
     uint32_t begin, end, size, offset;
     
@@ -34,62 +34,63 @@ void MixGMD::readDB(std::fstream &fh)
     
     // read file from buffer into respective dbs
     for (uint32_t i = 0; i < m_db_array.size(); i++){
-        m_db_array[i]->readDB(&data.at(0), offset);
-        offset += m_db_array[i]->getSize();
+        m_db_array[i]->ReadDb(&data.at(0), offset);
+        offset += m_db_array[i]->GetSize();
     }
 }
 
-void MixGMD::writeDB(std::fstream& fh)
+void MixGmd::WriteDb(std::fstream& fh)
 {
     for (unsigned int i = 0; i < m_db_array.size(); i++){
-        m_db_array[i]->writeDB(fh);
+        m_db_array[i]->WriteDb(fh);
     }
 }
 
-std::string MixGMD::getName(t_game game, int32_t id) const
+std::string MixGmd::GetName(Game game, int32_t id) const
 {
     switch(game){
-        case game_td:
-            return m_td_list.getName(id);
-        case game_ra:
-            return m_ra_list.getName(id);
-        case game_ts:
-            return m_ts_list.getName(id);
-        case game_ra2:
-            return m_ra2_list.getName(id);
+        case GameTd:
+            return m_td_list.GetName(id);
+        case GameRa:
+            return m_ra_list.GetName(id);
+        case GameTs:
+            return m_ts_list.GetName(id);
+        case GameRa2:
+            return m_ra2_list.GetName(id);
         default:
             return "";
     }
 }
 
-bool MixGMD::addName(t_game game, const std::string& name, const std::string& desc)
+bool MixGmd::AddName(Game game, const std::string& name, const std::string& desc)
 {
     switch(game){
-        case game_td:
-            return m_td_list.addName(name, desc);
-        case game_ra:
-            return m_ra_list.addName(name, desc);
-        case game_ts:
-            return m_ts_list.addName(name, desc);
-        case game_ra2:
-            return m_ra2_list.addName(name, desc);
+        case GameTd:
+            return m_td_list.AddName(name, desc);
+        case GameRa:
+            return m_ra_list.AddName(name, desc);
+        case GameTs:
+            return m_ts_list.AddName(name, desc);
+        case GameRa2:
+            return m_ra2_list.AddName(name, desc);
         default:
             return false;
     }
 }
 
-bool MixGMD::deleteName(t_game game, const std::string& name)
+bool MixGmd::DeleteName(Game game, const std::string& name)
 {
     switch(game){
-        case game_td:
-            return m_td_list.deleteName(name);
-        case game_ra:
-            return m_ra_list.deleteName(name);
-        case game_ts:
-            return m_ts_list.deleteName(name);
-        case game_ra2:
-            return m_ra2_list.deleteName(name);
+        case GameTd:
+            return m_td_list.DeleteName(name);
+        case GameRa:
+            return m_ra_list.DeleteName(name);
+        case GameTs:
+            return m_ts_list.DeleteName(name);
+        case GameRa2:
+            return m_ra2_list.DeleteName(name);
         default:
             return false;
     }
 }
+

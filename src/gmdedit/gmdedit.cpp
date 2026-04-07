@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <iostream>
 
-typedef std::pair<std::string, std::string> t_namepair;
-t_game game;
-std::vector<t_namepair> names;
+typedef std::pair<std::string, std::string> NamePair;
+Game game;
+std::vector<NamePair> names;
 
 /*
  * 
@@ -26,16 +26,16 @@ std::vector<t_namepair> names;
                   << ">:";
         std::cin >> choice;
         if(choice == "td"){
-            game = game_td;
+            game = GameTd;
             return false;
         } else if(choice == "ra") {
-            game = game_ra;
+            game = GameRa;
             return false;
         } else if(choice == "ts") {
-            game = game_ts;
+            game = GameTs;
             return false;
         } else if(choice == "ra2") {
-            game = game_ra2;
+            game = GameRa2;
             return false;
         } else if(choice == "quit") {
             return true;
@@ -45,11 +45,11 @@ std::vector<t_namepair> names;
     }
 }
 
-bool addEntry()
+bool AddEntry()
 {
     bool another = true;
     std::string input;
-    t_namepair name;
+    NamePair name;
     while(another){
         std::cout << "Filename >: ";
         std::cin >> input;
@@ -66,10 +66,10 @@ bool addEntry()
     }
 }
 
-void menu()
+void Menu()
 {
     bool quit = false
-    game = game_td;
+    game = GameTd;
     
     while(!quit){
         quit = gameChoice();
@@ -78,26 +78,26 @@ void menu()
 
 int main(int argc, char** argv) {
     
-    MixGMD gmd;
+    MixGmd gmd;
     std::fstream ifh;
     std::fstream ofh;
-    std::vector<t_namepair> names;
+    std::vector<NamePair> names;
     
     ifh.open(argv[1], std::ios_base::in|std::ios_base::binary);
-    gmd.readDB(ifh);
+    gmd.ReadDb(ifh);
     ifh.close();
     
     if(argc < 4){
-        //menu();
+        //Menu();
         std::cout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
         return 1;
     } else {
-        game = game_td;
+        game = GameTd;
         
         ifh.open(argv[2], std::ios_base::in);
 
         while(!ifh.eof()){
-            t_namepair entry;
+            NamePair entry;
             std::getline(ifh, entry.first, ',');
             std::getline(ifh, entry.second);
             std::cout << entry.first << " - " << entry.second << "\n";
@@ -108,12 +108,13 @@ int main(int argc, char** argv) {
     }
 
     for(unsigned int i = 0; i < names.size(); i++) {
-        gmd.addName(game, names[i].first, names[i].second);
+        gmd.AddName(game, names[i].first, names[i].second);
     }
     
     ofh.open(argv[3], std::ios_base::out|std::ios_base::binary);
-    gmd.writeDB(ofh);
+    gmd.WriteDb(ofh);
     
     return 0;
 }
+
 
