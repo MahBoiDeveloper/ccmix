@@ -1,7 +1,7 @@
 #include "mix_db_gamedb.hpp"
 #include "mixid.hpp"
 #include <cstring>
-#include <iostream>
+#include <print>
 
 MixGameDb::MixGameDb(Game game) :
 m_size(0),
@@ -45,7 +45,7 @@ void MixGameDb::WriteDb(std::fstream& fh)
     //first record how many entries we have for this db.
     
     if(!fh.is_open()){
-        std::cout << "File not open to write DB\n";
+        std::print("File not open to write DB\n");
     }
     fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
@@ -81,8 +81,8 @@ bool MixGameDb::AddName(const std::string& name, const std::string& description)
         m_entries++;
         return true;
     } else {
-        std::cout << name << " generates an ID conflict with existing entry " << 
-                rv.first->second.name << std::endl;
+        std::println("{} generates an ID conflict with existing entry {}",
+                name, rv.first->second.name);
         return false;
     }
     return false;
@@ -90,7 +90,7 @@ bool MixGameDb::AddName(const std::string& name, const std::string& description)
 
 bool MixGameDb::DeleteName(const std::string& name)
 {
-    std::cout << name << " DeleteName not implemented yet" << std::endl;
+    std::println("{} DeleteName not implemented yet", name);
     return false;
 }
 

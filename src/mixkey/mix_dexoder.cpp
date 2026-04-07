@@ -7,8 +7,7 @@
 
 #include "mix_dexoder.hpp"
 #include "cryptopp/integer.h"
-#include <stdio.h>
-#include <iostream>
+#include <print>
 
 const char *pubkey_str = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
 const char *prvkey_str = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
@@ -51,7 +50,8 @@ uint32_t glob1_hi_inv_lo, glob1_hi_inv_hi;
 void PrintHex(const char* bigint, int size)
 {
     for(int i = size - 1; i >= 0; i--){
-        printf("%02X", bigint[i]);
+        std::print("{:02X}", static_cast<unsigned int>(
+                static_cast<unsigned char>(bigint[i])));
     }
 }
 

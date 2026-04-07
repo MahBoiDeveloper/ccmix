@@ -1,7 +1,7 @@
 #include "mix_db_lmd.hpp"
 #include "mixid.hpp"
 #include <cstring>
-#include <iostream>
+#include <print>
 #include <vector>
 
 const char MixLmd::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
@@ -52,8 +52,8 @@ void MixLmd::ReadDb(std::fstream &fh, uint32_t offset, uint32_t size)
         if(rv.second) {
             m_size += id_data.length() + 1;
         } else {
-            std::cout << id_data << " generates an ID conflict with existing entry " << 
-                    rv.first->second << std::endl;
+            std::println("{} generates an ID conflict with existing entry {}",
+                    id_data, rv.first->second);
         }
     }
 }
@@ -93,8 +93,8 @@ bool MixLmd::AddName(const std::string& name)
         m_size += name.length() + 1;
         return true;
     } else {
-        std::cout << name << " generates an ID conflict with existing entry " << 
-                rv.first->second << std::endl;
+        std::println("{} generates an ID conflict with existing entry {}",
+                name, rv.first->second);
         return false;
     }
     return false;
@@ -109,7 +109,7 @@ bool MixLmd::DeleteName(int32_t id)
 {
     IdIterator rv = m_name_map.find(id);
     if(rv == m_name_map.end()){
-        std::cout << "Name not found in local DB." << std::endl;
+        std::println("Name not found in local DB.");
         return false;
     }
     

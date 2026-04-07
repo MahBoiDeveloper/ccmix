@@ -7,7 +7,7 @@
 
 #include "../mix_db_gmd.hpp"
 #include <stdio.h>
-#include <iostream>
+#include <print>
 
 typedef std::pair<std::string, std::string> NamePair;
 Game game;
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     
     if(argc < 4){
         //Menu();
-        std::cout << "Use: gmdedit gmdpath additionspath newgmdpath\n";
+        std::print("Use: gmdedit gmdpath additionspath newgmdpath\n");
         return 1;
     } else {
         game = GameTd;
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
             NamePair entry;
             std::getline(ifh, entry.first, ',');
             std::getline(ifh, entry.second);
-            std::cout << entry.first << " - " << entry.second << "\n";
+            std::println("{} - {}", entry.first, entry.second);
             if(entry.first != ""){
                 names.push_back(entry);
             }
