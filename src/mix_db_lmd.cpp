@@ -1,8 +1,8 @@
 #include "mix_db_lmd.h"
 #include "mixid.h"
+#include <cstring>
 #include <iostream>
-
-using namespace std;
+#include <vector>
 
 const char MixLMD::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 
@@ -16,46 +16,46 @@ MixLMD::MixLMD(t_game game)
 
 void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
 {
-    
-    char* data = new char[size];
-    char* orig = data;
+    m_name_map.clear();
+    m_size = 52;
+    addName(getDBName());
+
+    std::vector<char> data(size);
     fh.seekg(offset, std::ios_base::beg);
-    fh.read(data, size);
+    fh.read(&data.at(0), size);
     
     //move pointer past most of header to entry count, total header is 52 bytes.
-    data += 48;
+    const char* cursor = &data.at(0) + 48;
     
     //get count of entries
-    int32_t count = *reinterpret_cast<const int32_t*>(data);
-    data += 4;
+    int32_t count = 0;
+    std::memcpy(&count, cursor, sizeof(count));
+    cursor += 4;
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to \0;
     //local mix db doesn't have descriptions.
-    string id_data;
+    std::string id_data;
     while (count--) {
         //get the id for this filename
-        id_data = data;
+        id_data = cursor;
         int32_t id = MixID::idGen(m_game_type, id_data);
         //check if its the LMD itself, if it is skip add logic
         if(id == m_id) {
-            data += getDBName().length() + 1;
+            cursor += getDBName().length() + 1;
             continue;
         }
         
         std::pair<t_id_iter,bool> rv;
-        data += id_data.length() + 1;
+        cursor += id_data.length() + 1;
         rv = m_name_map.insert(t_id_pair(id, id_data));
         if(rv.second) {
             m_size += id_data.length() + 1;
         } else {
-            cout << id_data << " generates an ID conflict with existing entry " << 
-                    rv.first->second << endl;
+            std::cout << id_data << " generates an ID conflict with existing entry " << 
+                    rv.first->second << std::endl;
         }
     }
-
-    data = orig;
-    delete[] data;
 }
 
 void MixLMD::writeDB(std::fstream& fh)
@@ -74,7 +74,7 @@ void MixLMD::writeDB(std::fstream& fh)
     }
 }
 
-std::string MixLMD::getName(int32_t id)
+std::string MixLMD::getName(int32_t id) const
 {
     t_id_iter rv = m_name_map.find(id);
     
@@ -85,7 +85,7 @@ std::string MixLMD::getName(int32_t id)
     return "[id]" + MixID::idStr(id);
 }
 
-bool MixLMD::addName(std::string name)
+bool MixLMD::addName(const std::string& name)
 {
     std::pair<t_id_iter,bool> rv;
     rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type, name), name));
@@ -93,14 +93,14 @@ bool MixLMD::addName(std::string name)
         m_size += name.length() + 1;
         return true;
     } else {
-        cout << name << " generates an ID conflict with existing entry " << 
-                rv.first->second << endl;
+        std::cout << name << " generates an ID conflict with existing entry " << 
+                rv.first->second << std::endl;
         return false;
     }
     return false;
 }
 
-bool MixLMD::deleteName(std::string name)
+bool MixLMD::deleteName(const std::string& name)
 {
     return deleteName(MixID::idGen(m_game_type, name));
 }

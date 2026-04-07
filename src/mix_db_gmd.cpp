@@ -42,12 +42,11 @@ void MixGMD::readDB(std::fstream &fh)
 void MixGMD::writeDB(std::fstream& fh)
 {
     for (unsigned int i = 0; i < m_db_array.size(); i++){
-        if (!m_db_array[i]) continue;
         m_db_array[i]->writeDB(fh);
     }
 }
 
-std::string MixGMD::getName(t_game game, int32_t id)
+std::string MixGMD::getName(t_game game, int32_t id) const
 {
     switch(game){
         case game_td:
@@ -63,7 +62,7 @@ std::string MixGMD::getName(t_game game, int32_t id)
     }
 }
 
-bool MixGMD::addName(t_game game, std::string name, std::string desc = "")
+bool MixGMD::addName(t_game game, const std::string& name, const std::string& desc)
 {
     switch(game){
         case game_td:
@@ -79,7 +78,7 @@ bool MixGMD::addName(t_game game, std::string name, std::string desc = "")
     }
 }
 
-bool MixGMD::deleteName(t_game game, std::string name)
+bool MixGMD::deleteName(t_game game, const std::string& name)
 {
     switch(game){
         case game_td:

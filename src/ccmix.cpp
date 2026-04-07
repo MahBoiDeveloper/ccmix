@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -39,64 +40,56 @@
 #include <pwd.h>
 #endif
 
-using namespace std;
-
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
        OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC, OPT_CHK, OPT_INFO, OPT_ADD, 
        OPT_REM};
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
 
-const string games[] = {"td", "ra", "ts", "ra2"};
+namespace
+{
+    const std::string games[] = {"td", "ra", "ts", "ra2"};
+
+    bool fileExists(const std::string& path)
+    {
+        std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
+        return file.is_open();
+    }
+}
 
 //get program directory from argv[0]
-static const string getProgramDir(const char* const program_location) 
+static std::string getProgramDir(const std::string& program_location) 
 {
-    int i;
-    const char* const loc = program_location;
-
-    size_t size = strlen(loc);
-    
-    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i) {
-
-        if (loc[i] == DIR_SEPARATOR) {
-            char* curdir = (char*) malloc((i + 1) * sizeof (char));
-            if (curdir != NULL) {
-                strncpy(curdir, loc, (size_t) i);
-                curdir[i] = '\0';
-                return string(curdir);
-            }
-        }
+    const std::string::size_type separator = program_location.find_last_of("\\/");
+    if (separator == std::string::npos) {
+        return ".";
     }
-    
-    const char* curdir = ".";
-    return string(curdir);
+
+    return program_location.substr(0, separator);
 }
 
 //search and test a few locations for a global mix database
 //TODO copy gmd if found but not in a home dir config.
-string findGMD(const string program_dir, const string home_dir)
+std::string findGMD(const std::string& program_dir, const std::string& home_dir)
 {
-    string gmd_loc = "global mix database.dat";
-    vector<string> gmd_dir(3);
+    const std::string gmd_loc = "global mix database.dat";
+    std::vector<std::string> gmd_dir(3);
     gmd_dir[0] = home_dir;
     gmd_dir[1] = "/usr/share/ccmix";
     gmd_dir[2] = program_dir;
     for (unsigned int i = 0; i < gmd_dir.size(); i++) {
-        string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
-        if (FILE *file = fopen(gmd_test.c_str(), "r")) {
-            fclose(file);
+        const std::string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
+        if (fileExists(gmd_test)) {
             return gmd_test;
         }
     }
     return gmd_loc;
 }
 
-string findKeySource(const string program_dir)
+std::string findKeySource(const std::string& program_dir)
 {
-    string key_source_loc = "key.source";
-    string gmd_test = program_dir + DIR_SEPARATOR + key_source_loc;
-    if (FILE *file = fopen(gmd_test.c_str(), "r")) {
-        fclose(file);
+    const std::string key_source_loc = "key.source";
+    const std::string gmd_test = program_dir + DIR_SEPARATOR + key_source_loc;
+    if (fileExists(gmd_test)) {
         return gmd_test;
     }
 
@@ -107,21 +100,21 @@ string findKeySource(const string program_dir)
 // or not all required args were provided.
 inline void ShowUsage(TCHAR** argv)
 {
-    cout << "Usage: " << argv[0] << " [--mode] (--file FILE)"
-            "(--directory DIR) [--mix MIXFILE]" << endl;
-    cout << "Try `" << argv[0] << " -?` or `" << argv[0] << 
-            " --help` for more information." << endl;
+    std::cout << "Usage: " << argv[0] << " [--mode] (--file FILE)"
+            "(--directory DIR) [--mix MIXFILE]" << std::endl;
+    std::cout << "Try `" << argv[0] << " -?` or `" << argv[0] << 
+            " --help` for more information." << std::endl;
 }
 
 // Shows more detailed help if help flags were used in invocation.
 void ShowHelp(TCHAR** argv)
 {
-    cout << "/n***ccmix program usage***\n" << endl;
-    cout << "Usage: " << argv[0] << 
+    std::cout << "\n***ccmix program usage***\n" << std::endl;
+    std::cout << "Usage: " << argv[0] << 
             " [--mode] (--file FILE) (--directory DIR) (--game "
-            "[td|ra|ts|ra2]) [--mix MIXFILE]\n" << endl;
-    cout << "Modes:\n" << endl;
-    cout << "--extract\n"
+            "[td|ra|ts|ra2]) [--mix MIXFILE]\n" << std::endl;
+    std::cout << "Modes:\n" << std::endl;
+    std::cout << "--extract\n"
             "Extracts the contents of the specified mix file to the current "
             "directory.\n"
             "--file specifies a single file to extract.\n"
@@ -129,8 +122,8 @@ void ShowHelp(TCHAR** argv)
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
-            "Revenge.\n" << endl;
-    cout << "--create\n"
+            "Revenge.\n" << std::endl;
+    std::cout << "--create\n"
             "Creates a new mix file from the contents of the current folder.\n"
             "--file specifies a single file as the initial file to add to the\n"
             "new mix.\n"
@@ -140,29 +133,29 @@ void ShowHelp(TCHAR** argv)
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
-            "Revenge.\n" << endl;
-    cout << "--list\n"
+            "Revenge.\n" << std::endl;
+    std::cout << "--list\n"
             "Lists the contents of the specified mix file.\n" 
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and Red Alert 2/Yuri's "
-            "Revenge.\n" << endl;
-    cout << "--add\n"
+            "Revenge.\n" << std::endl;
+    std::cout << "--add\n"
             "Adds the specified file or mix feature.\n"
             "--file specifies a single file to add.\n"
             "--checksum specifies the mix should have a checksum.\n"
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
-            "Revenge.\n" << endl;
-    cout << "--remove\n"
+            "Revenge.\n" << std::endl;
+    std::cout << "--remove\n"
             "Removes the specified file or mix feature.\n"
             "--file specifies a single file to remove.\n"
             "--checksum specifies the mix should not have a checksum.\n"
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
-            "Revenge.\n" << endl;
+            "Revenge.\n" << std::endl;
 }
 
 //quick inline to respond to more than one command being specified.
@@ -175,7 +168,7 @@ inline void NoMultiMode(TCHAR** argv)
 //convert string we got for ID to uint32_t
 //This converts a text hex string to a number, its not to hash the filename.
 //That is a method of MixFile.
-uint32_t StringToID(string in_string)
+uint32_t StringToID(const std::string& in_string)
 {
     if (in_string.size() > 8) return 0;
     
@@ -189,73 +182,73 @@ uint32_t StringToID(string in_string)
 }
 
 //Function handles the different ways to extract files from a mix.
-bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
+bool Extraction(MixFile& in_file, const std::string& filename, const std::string& outdir, uint32_t id)
 {   
-    if (outdir == "") outdir = "./";
-    string destination = outdir + DIR_SEPARATOR + filename;
+    std::string extraction_dir = outdir.empty() ? "." : outdir;
+    std::string destination = extraction_dir + DIR_SEPARATOR + filename;
     
     if (filename == "" && id == 0) {
-        if (!in_file.extractAll(outdir)) {
-            cout << "Extraction failed" << endl;
+        if (!in_file.extractAll(extraction_dir)) {
+            std::cout << "Extraction failed" << std::endl;
             return false;
         } else {
             return true;
         }
     } else if (filename != "" && id == 0) {
         if (!in_file.extractFile(filename, destination)) {
-            cout << "Extraction failed" << endl;
+            std::cout << "Extraction failed" << std::endl;
             return false;
         } else {
             return true;
         }
     } else if (id != 0){
         if (filename == ""){
-            cout << "You must specify a filename to extract to when giving "
-                    "an ID" << endl;
+            std::cout << "You must specify a filename to extract to when giving "
+                    "an ID" << std::endl;
             return false;
         }
         if (!in_file.extractFile(id, destination)) {
-            cout << "Extraction failed" << endl;
+            std::cout << "Extraction failed" << std::endl;
             return false;
         } else {
             return true;
         }
     } else {
-        cout << "You have used an unsupported combination of options." << endl;
+        std::cout << "You have used an unsupported combination of options." << std::endl;
         return false;
     }
     return false;
 }
 
 //Return a string of the home dir path
-string GetHomeDir()
+std::string GetHomeDir()
 {
-    char* tmp;
-    string rv;
+    const char* tmp = NULL;
+    std::string rv;
     
     #ifdef _WIN32
 
-    tmp = getenv("HOMEDRIVE");
+    tmp = std::getenv("HOMEDRIVE");
     if ( tmp == NULL ) {
         return "";
     } else {
-        rv = string(tmp);
+        rv = std::string(tmp);
     }
     
-    tmp = getenv("HOMEPATH");
+    tmp = std::getenv("HOMEPATH");
     if ( tmp == NULL ) {
         return "";
     } else {
-        rv += string(tmp);
+        rv += std::string(tmp);
     }
 
     #else
 
-    tmp = getenv("HOME");
+    tmp = std::getenv("HOME");
     if ( tmp == NULL ) {
-        rv = string(getpwuid(getuid())->pw_dir);
+        rv = std::string(getpwuid(getuid())->pw_dir);
     } else {
-        rv = string(tmp);
+        rv = std::string(tmp);
     }
 
     #endif
@@ -292,11 +285,14 @@ int _tmain(int argc, TCHAR** argv)
     
     //initialise some variables used later
     uint32_t file_id = 0;
-    string file = "";
-    string dir = "";
-    string input_mixfile = "";
-    const string program_path(argv[0]);
-    string user_home_dir = GetHomeDir();
+    std::string file = "";
+    std::string dir = "";
+    std::string input_mixfile = "";
+    const std::string program_path(argv[0]);
+    const std::string program_dir = getProgramDir(program_path);
+    const std::string user_home_dir = GetHomeDir();
+    const std::string global_db_path = findGMD(program_dir, user_home_dir);
+    const std::string key_source_path = findKeySource(program_dir);
     t_game game = game_td;
     t_mixmode mode = NONE;
     bool local_db = false;
@@ -325,7 +321,7 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_FILES:
             {
                 if (args.OptionArg() != NULL) {
-                    file = string(args.OptionArg());
+                    file = std::string(args.OptionArg());
                 } else {
                     _tprintf(_T("--filename option requires a filename.\n"));
                     return 1;
@@ -335,7 +331,7 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_ID:
             {
                 if (args.OptionArg() != NULL) {
-                    file_id = StringToID(string(args.OptionArg()));
+                    file_id = StringToID(std::string(args.OptionArg()));
                 } else {
                     _tprintf(_T("--id option requires a file id.\n"));
                     return 1;
@@ -345,8 +341,8 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_MIX:
             {
                 if (args.OptionArg() != NULL) {
-                    input_mixfile = string(args.OptionArg());
-                    cout << "Operating on " << input_mixfile << endl;
+                    input_mixfile = std::string(args.OptionArg());
+                    std::cout << "Operating on " << input_mixfile << std::endl;
                 } else {
                     _tprintf(_T("--mix option requires a mix file.\n"));
                     return 1;
@@ -356,7 +352,7 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_DIR:
             {
                 if (args.OptionArg() != NULL) {
-                    dir = string(args.OptionArg());
+                    dir = std::string(args.OptionArg());
                 } else {
                     _tprintf(_T("--directory option requires a directory name.\n"));
                     return 1;
@@ -380,7 +376,7 @@ int _tmain(int argc, TCHAR** argv)
             }
             case OPT_GAME:
             {
-                string gt = string(args.OptionArg());
+                std::string gt = std::string(args.OptionArg());
                 if(gt == games[0]){
                     game = game_td;
                 } else if(gt == games[1]){
@@ -448,17 +444,17 @@ int _tmain(int argc, TCHAR** argv)
     
     //check if we got told a mix file to do something with.
     if (input_mixfile == ""){
-        cout << "You must specify --mix MIXFILE to operate on." << endl;
+        std::cout << "You must specify --mix MIXFILE to operate on." << std::endl;
+        return 1;
     }
     
     switch(mode) {
         case EXTRACT:
         {   
-            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile in_file(global_db_path, game);
 
             if (!in_file.open(input_mixfile)){
-                cout << "Cannot open specified mix file" << endl;
+                std::cout << "Cannot open specified mix file" << std::endl;
                 return 1;
             }
             
@@ -470,12 +466,11 @@ int _tmain(int argc, TCHAR** argv)
         }
         case CREATE:
         {
-            MixFile out_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile out_file(global_db_path, game);
 
             if (!out_file.createMix(input_mixfile, dir, local_db, 
-                 encrypt, checksum, findKeySource(getProgramDir(program_path.c_str())))){
-                cout << "Failed to create new mix file" << endl;
+                 encrypt, checksum, key_source_path)){
+                std::cout << "Failed to create new mix file" << std::endl;
                 return 1;
             }
             
@@ -484,11 +479,10 @@ int _tmain(int argc, TCHAR** argv)
         }
         case ADD:
         {
-            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile in_file(global_db_path, game);
 
             if (!in_file.open(input_mixfile)){
-                cout << "Cannot open specified mix file" << endl;
+                std::cout << "Cannot open specified mix file" << std::endl;
                 return 1;
             }
             
@@ -505,11 +499,10 @@ int _tmain(int argc, TCHAR** argv)
         }
         case REMOVE:
         {
-            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile in_file(global_db_path, game);
 
             if (!in_file.open(input_mixfile)){
-                cout << "Cannot open specified mix file" << endl;
+                std::cout << "Cannot open specified mix file" << std::endl;
                 return 1;
             }
             
@@ -526,11 +519,10 @@ int _tmain(int argc, TCHAR** argv)
         }
         case LIST:
         {
-            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile in_file(global_db_path, game);
 
             if (!in_file.open(input_mixfile)){
-                cout << "Cannot open specified mix file" << endl;
+                std::cout << "Cannot open specified mix file" << std::endl;
                 return 1;
             }
             
@@ -540,11 +532,10 @@ int _tmain(int argc, TCHAR** argv)
         }
         case INFO:
         {
-            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir), game);
+            MixFile in_file(global_db_path, game);
 
             if (!in_file.open(input_mixfile)){
-                cout << "Cannot open specified mix file" << endl;
+                std::cout << "Cannot open specified mix file" << std::endl;
                 return 1;
             }
             
@@ -554,7 +545,7 @@ int _tmain(int argc, TCHAR** argv)
         }
         default:
         {
-            cout << "command switch default, this shouldn't happen!!" << endl;
+            std::cout << "command switch default, this shouldn't happen!!" << std::endl;
             return 1;
         }
     }

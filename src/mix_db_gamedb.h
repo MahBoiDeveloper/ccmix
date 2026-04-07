@@ -21,11 +21,11 @@ public:
     MixGameDB(t_game game);
     void readDB(const char* data, uint32_t offset);
     void writeDB(std::fstream &fh);
-    std::string getName(int32_t id);
-    bool addName(std::string name, std::string description);
-    bool deleteName(std::string name);
-    t_game getGame() { return m_game_type; }
-    uint32_t getSize() { return m_size; }
+    std::string getName(int32_t id) const;
+    bool addName(const std::string& name, const std::string& description);
+    bool deleteName(const std::string& name);
+    t_game getGame() const { return m_game_type; }
+    uint32_t getSize() const { return m_size; }
     
 private:
     struct t_id_data {

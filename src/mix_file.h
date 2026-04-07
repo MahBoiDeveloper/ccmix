@@ -40,7 +40,7 @@
  */
 class MixFile {
 public:
-    MixFile(const std::string gmd = "global mix database.dat" , 
+    MixFile(const std::string& gmd = "global mix database.dat" , 
             t_game openGame = game_td);
     virtual ~MixFile();
     /**
@@ -49,7 +49,7 @@ public:
      * @retval true file opened
      * @retval false file not found
      */
-    bool open(const std::string path);
+    bool open(const std::string& path);
     /**
      * @brief extract file from mix archive
      * @param fileID CRC ID of file
@@ -57,7 +57,7 @@ public:
      * @retval true file extracted
      * @retval false file not present in the archive 
      */
-    bool extractFile(int32_t fileID, std::string outPath);
+    bool extractFile(int32_t fileID, const std::string& outPath);
     /**
      * @brief extract file from mix archive
      * @param fileName name of file
@@ -65,14 +65,14 @@ public:
      * @retval true file extracted
      * @retval false file not present in the archive 
      */
-    bool extractFile(std::string fileName, std::string outPath);
+    bool extractFile(const std::string& fileName, const std::string& outPath);
     /**
      * @brief extract all files from the archive
      * @param outPath output directory
      * @param withFileNames try to get file names of the content
      * @return true if extraction successful
      */
-    bool extractAll(std::string outPath = ".");
+    bool extractAll(const std::string& outPath = ".");
      /**
      * @brief Creates a new mix file
      * @param fileName name and path of mix to create
@@ -85,9 +85,9 @@ public:
      * @param key_src string of the path to a key_source to use in encryption
      * @return true if creation is successful
      */
-    bool createMix(std::string fileName, std::string in_dir, bool with_lmd = false, 
+    bool createMix(const std::string& fileName, const std::string& in_dir, bool with_lmd = false, 
                    bool encrypted = false, bool checksum = false, 
-                   std::string key_src = "");
+                   const std::string& key_src = "");
     /**
      * @brief adds a sha1 checksum to the end of the file and flags it in the
      *        header.
@@ -105,13 +105,13 @@ public:
      * @param name file name
      * @return true if successful
      */
-    bool addFile(std::string name);
+    bool addFile(const std::string& name);
      /**
      * @brief checks, if file is present in the archive and removes if so
      * @param name file name
      * @return true if successful
      */
-    bool removeFile(std::string name);
+    bool removeFile(const std::string& name);
      /**
      * @brief checks, if file is present in the archive and removes if so
      * @param name file name
@@ -123,7 +123,7 @@ public:
      * @param id id of filename
      * @return true if present
      */
-    bool checkFileName(std::string name);
+    bool checkFileName(const std::string& name) const;
     /**
      * @brief mix archive header
      * 
@@ -157,10 +157,10 @@ protected:
     typedef std::pair<uint32_t, uint32_t> t_skip_entry;
     typedef std::map<uint32_t, uint32_t>::const_iterator t_skip_map_iter;
     bool writeCheckSum(std::fstream &fh, int32_t pos = 0);
-    std::string baseName(std::string const& pathname);
+    std::string baseName(const std::string& pathname) const;
     bool decrypt();
     bool encrypt();
-    bool overWriteOld(std::string temp);
+    bool overWriteOld(const std::string& temp);
     MixHeader m_header; // mix file header
     MixGMD m_global_db;
     MixLMD m_local_db;

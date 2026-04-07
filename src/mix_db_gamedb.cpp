@@ -1,20 +1,23 @@
 #include "mix_db_gamedb.h"
 #include "mixid.h"
+#include <cstring>
 #include <iostream>
-
-using namespace std;
 
 MixGameDB::MixGameDB(t_game game) :
 m_size(0),
+m_entries(0),
 m_game_type(game)
 {
 }
 
 void MixGameDB::readDB(const char* data, uint32_t offset)
 {
+    m_name_map.clear();
+    m_size = 0;
+    m_entries = 0;
     data += offset;
     //get count of entries
-    m_entries = *reinterpret_cast<const uint32_t*>(data);
+    std::memcpy(&m_entries, data, sizeof(m_entries));
     m_size += 4;
     data += 4;
     
@@ -52,7 +55,7 @@ void MixGameDB::writeDB(std::fstream& fh)
     }
 }
 
-std::string MixGameDB::getName(int32_t id)
+std::string MixGameDB::getName(int32_t id) const
 {
     t_id_iter rv = m_name_map.find(id);
     
@@ -63,7 +66,7 @@ std::string MixGameDB::getName(int32_t id)
     return "[id]" + MixID::idStr(id);
 }
 
-bool MixGameDB::addName(std::string name, std::string description)
+bool MixGameDB::addName(const std::string& name, const std::string& description)
 {
     t_id_data id_data;
     id_data.name = name;
@@ -78,15 +81,15 @@ bool MixGameDB::addName(std::string name, std::string description)
         m_entries++;
         return true;
     } else {
-        cout << name << " generates an ID conflict with existing entry " << 
-                rv.first->second.name << endl;
+        std::cout << name << " generates an ID conflict with existing entry " << 
+                rv.first->second.name << std::endl;
         return false;
     }
     return false;
 }
 
-bool MixGameDB::deleteName(std::string name)
+bool MixGameDB::deleteName(const std::string& name)
 {
-    cout << name << " deleteName not implemented yet" << endl;
+    std::cout << name << " deleteName not implemented yet" << std::endl;
     return false;
 }

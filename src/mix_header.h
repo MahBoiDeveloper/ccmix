@@ -90,24 +90,24 @@ public:
     bool writeHeader(std::fstream &fh);
     bool addEntry(int32_t id, uint32_t size);
     bool removeEntry(int32_t id, bool adjust);
-    t_index_info getEntry(int32_t id);
-    bool getHasChecksum() { return m_has_checksum; }
+    t_index_info getEntry(int32_t id) const;
+    bool getHasChecksum() const { return m_has_checksum; }
     void setHasChecksum();
     void clearHasChecksum();
-    bool getIsEncrypted() { return m_is_encrypted; }
+    bool getIsEncrypted() const { return m_is_encrypted; }
     void setIsEncrypted();
     void clearIsEncrypted();
-    t_game getGame() { return m_game_type; }
+    t_game getGame() const { return m_game_type; }
     //void printContents();
     
-    uint32_t getHeaderSize() { return m_header_size; }
-    uint32_t getBodySize() { return m_body_size; }
+    uint32_t getHeaderSize() const { return m_header_size; }
+    uint32_t getBodySize() const { return m_body_size; }
     void setBodySize(uint32_t size) { m_body_size = size; }
-    uint16_t getFileCount() { return m_file_count; }
+    uint16_t getFileCount() const { return m_file_count; }
     t_mix_index_iter getBegin() { return m_index.begin(); }
     t_mix_index_iter getEnd() { return m_index.end(); }
-    char* getKey() { return m_key; }
-    char* getKeySource() { return m_keysource; }
+    const char* getKey() const { return m_key; }
+    const char* getKeySource() const { return m_keysource; }
     
 private:
     void setKey();
@@ -127,6 +127,7 @@ private:
     char m_keysource[80];
     char m_key[56];
     
+    void reset();
     bool readEncrypted(std::fstream &fh);
     bool writeEncrypted(std::fstream &fh);
     bool readUnEncrypted(std::fstream &fh);
