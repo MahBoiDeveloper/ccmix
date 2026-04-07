@@ -1,4 +1,4 @@
-#include "mix_file.h"
+#include "mix_file.hpp"
 
 #ifdef _MSC_VER
 
@@ -14,7 +14,7 @@
 #include <algorithm>
 
 #ifdef _MSC_VER
-#include "win32/dirent.h"
+#include "win32/dirent.hpp"
 #else
 #include <dirent.h>
 #endif

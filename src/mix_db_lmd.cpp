@@ -1,5 +1,5 @@
-#include "mix_db_lmd.h"
-#include "mixid.h"
+#include "mix_db_lmd.hpp"
+#include "mixid.hpp"
 #include <cstring>
 #include <iostream>
 #include <vector>

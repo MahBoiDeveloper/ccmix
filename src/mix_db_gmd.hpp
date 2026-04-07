@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_gmd.h
+ * File:   mix_db_gmd.hpp
  * Author: fbsagr
  *
  * Created on May 30, 2014, 4:30 PM
@@ -8,7 +8,7 @@
 #ifndef MIX_DB_GMD_H
 #define	MIX_DB_GMD_H
 
-#include "mix_db_gamedb.h"
+#include "mix_db_gamedb.hpp"
 
 #include <vector>
 #include <fstream>

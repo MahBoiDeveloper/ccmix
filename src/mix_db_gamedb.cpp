@@ -1,5 +1,5 @@
-#include "mix_db_gamedb.h"
-#include "mixid.h"
+#include "mix_db_gamedb.hpp"
+#include "mixid.hpp"
 #include <cstring>
 #include <iostream>
 

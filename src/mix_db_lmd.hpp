@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_lmd.h
+ * File:   mix_db_lmd.hpp
  * Author: fbsagr
  *
  * Created on May 21, 2014, 11:57 AM
@@ -8,7 +8,7 @@
 #ifndef MIX_DB_LMD_H
 #define	MIX_DB_LMD_H
 
-#include "mixid.h"
+#include "mixid.hpp"
 #include <fstream>
 //#include <vector>
 #include <map>

@@ -1,4 +1,4 @@
-/*! @file SimpleOpt.h
+/*! @file SimpleOpt.hpp
 
     @version 3.6
 
@@ -72,9 +72,9 @@
     @section usage USAGE
     The SimpleOpt class is used by following these steps:
 <ol>
-    <li> Include the SimpleOpt.h header file
+    <li> Include the SimpleOpt.hpp header file
         <pre>
-        \#include "SimpleOpt.h"
+        \#include "SimpleOpt.hpp"
         </pre>
     <li> Define an array of valid options for your program.
 <pre>
@@ -165,7 +165,7 @@ ShowFiles(args.FileCount(), args.Files());
     A cross-platform library providing a simple method to parse almost any of
     the standard command-line formats in use today.
 
-    See the @link SimpleOpt.h SimpleOpt @endlink documentation for full 
+    See the @link SimpleOpt.hpp SimpleOpt @endlink documentation for full 
     details.
 
     @section SimpleGlob SimpleGlob

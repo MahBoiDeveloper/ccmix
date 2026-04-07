@@ -1,5 +1,5 @@
 /* 
- * File:   mix_header.h
+ * File:   mix_header.hpp
  * Author: fbsagr
  *
  * Created on June 5, 2014, 4:37 PM
@@ -8,7 +8,7 @@
 #ifndef MIX_HEADER_H
 #define	MIX_HEADER_H
 
-#include "mixid.h"
+#include "mixid.hpp"
 
 #include <string>
 #include <fstream>

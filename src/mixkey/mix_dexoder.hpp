@@ -1,5 +1,5 @@
 /* 
- * File:   mix_dexoder.h
+ * File:   mix_dexoder.hpp
  * Author: ivosh-l
  *
  * Created on 29. prosinec 2011, 11:31
@@ -11,7 +11,7 @@
 #include <cstring>
 
 #ifdef _MSC_VER
-#include "win32/stdint.h"
+#include "win32/stdint.hpp"
 #else
 #include <stdint.h>
 #endif

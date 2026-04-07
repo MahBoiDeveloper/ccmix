@@ -5,7 +5,7 @@
  * Created on 29. prosinec 2011, 11:31
  */
 
-#include "mix_dexoder.h"
+#include "mix_dexoder.hpp"
 #include "cryptopp/integer.h"
 #include <stdio.h>
 #include <iostream>

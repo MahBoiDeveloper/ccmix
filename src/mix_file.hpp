@@ -1,15 +1,15 @@
 #ifndef MIX_FILE_H
 #define	MIX_FILE_H
-#include "mix_db_gmd.h"
-#include "mix_db_lmd.h"
-#include "mix_header.h"
+#include "mix_db_gmd.hpp"
+#include "mix_db_lmd.hpp"
+#include "mix_header.hpp"
 #include <string>
 #include <fstream>
 #include <vector>
 #include <map>
 
 #ifdef _MSC_VER
-#include "win32/stdint.h"
+#include "win32/stdint.hpp"
 #else
 #include <stdint.h>
 #endif

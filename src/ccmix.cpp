@@ -5,8 +5,8 @@
  * Created on April 10, 2014, 1:43 PM
  */
 
-#include "SimpleOpt.h"
-#include "mix_file.h"
+#include "SimpleOpt.hpp"
+#include "mix_file.hpp"
 //#include "SimpleGlob.h"
 #include <cstdlib>
 #include <cstdio>
@@ -20,7 +20,7 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include "win32/dirent.h"
+#include "win32/dirent.hpp"
 
 #else
 

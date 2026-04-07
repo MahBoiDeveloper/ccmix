@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_gamedb.h
+ * File:   mix_db_gamedb.hpp
  * Author: fbsagr
  *
  * Created on June 3, 2014, 3:40 PM
@@ -8,7 +8,7 @@
 #ifndef MIX_DB_GAMEDB_H
 #define	MIX_DB_GAMEDB_H
 
-#include "mixid.h"
+#include "mixid.hpp"
 #include <string>
 #include <fstream>
 #include <map>

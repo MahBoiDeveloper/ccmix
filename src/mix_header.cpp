@@ -1,4 +1,4 @@
-#include "mix_header.h"
+#include "mix_header.hpp"
 
 #ifdef _MSC_VER
 

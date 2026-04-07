@@ -1,4 +1,4 @@
-#include "mix_db_gmd.h"
+#include "mix_db_gmd.hpp"
 #include <iostream>
 
 MixGMD::MixGMD() :

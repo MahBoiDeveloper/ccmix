@@ -4,7 +4,7 @@
 #include <string>
 
 #ifdef _MSC_VER
-#include "win32/stdint.h"
+#include "win32/stdint.hpp"
 #else
 #include <stdint.h>
 #endif
