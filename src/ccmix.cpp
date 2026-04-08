@@ -235,57 +235,62 @@ std::string FindKeySource(const std::string &programDir)
 
 inline void ShowUsage(const std::string_view programName)
 {
-    std::println("Usage: {} [--mode] (--file FILE) (--directory DIR) [--mix MIXFILE]",
-                 programName);
-    std::println("Try `{}` -? or `{}` --help for more information.",
-                 programName, programName);
+    std::println("Usage:");
+    std::println("  {} MODE --mix FILE [OPTIONS]", programName);
+    std::println("  {} --help", programName);
+    std::println("Try '{} --help' for more information.", programName);
+}
+
+inline void ShowHelpEntry(const std::string_view syntax,
+                          const std::string_view description)
+{
+    std::println("  {:<28} {}", syntax, description);
 }
 
 void ShowHelp(const std::string_view programName)
 {
-    std::println("***ccmix program usage***");
-    std::println("Usage: {} [--mode] (--file FILE) (--directory DIR) (--game [td|ra|ts|ra2]) [--mix MIXFILE]",
+    std::println("ccmix - manipulate Westwood MIX archives");
+    std::println("");
+    std::println("Usage:");
+    std::println("  {} --extract --mix FILE [--file NAME | --id HEX] [--directory DIR] [--game GAME]",
                  programName);
-    std::println
-    (
-        "Modes:\n\n"
-        "--extract\n"
-        "Extracts the contents of the specified mix file to the current directory.\n"
-        "--file specifies a single file to extract.\n"
-        "--directory specifies an alternative directory to extract to.\n"
-        "--game specified the game the mix is from, td covers the\n"
-        "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge.\n\n"
-        "--create\n"
-        "Creates a new mix file from the contents of the current folder.\n"
-        "--file specifies a single file as the initial file to add to the\n"
-        "new mix.\n"
-        "--directory specifies an alternative directory to create mix from.\n"
-        "--checksum specifies the mix should have a checksum.\n"
-        "--encrypted specified the mix header should be encrypted.\n"
-        "--game specified the game the mix is from, td covers the\n"
-        "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge.\n\n"
-        "--list\n"
-        "Lists the contents of the specified mix file.\n"
-        "--game specified the game the mix is from, td covers the\n"
-        "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and Red Alert 2/Yuri's Revenge.\n\n"
-        "--add\n"
-        "Adds the specified file or mix feature.\n"
-        "--file specifies a single file to add.\n"
-        "--checksum specifies the mix should have a checksum.\n"
-        "--game specified the game the mix is from, td covers the\n"
-        "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge.\n\n"
-        "--remove\n"
-        "Removes the specified file or mix feature.\n"
-        "--file specifies a single file to remove.\n"
-        "--checksum specifies the mix should not have a checksum.\n"
-        "--game specified the game the mix is from, td covers the\n"
-        "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge."
-    );
+    std::println("  {} --create --mix FILE [--directory DIR] [--file NAME] [--game GAME] [--lmd] [--encrypt] [--checksum]",
+                 programName);
+    std::println("  {} --add --mix FILE [--file NAME] [--checksum] [--game GAME]",
+                 programName);
+    std::println("  {} --remove --mix FILE [--file NAME] [--checksum] [--game GAME]",
+                 programName);
+    std::println("  {} --list --mix FILE [--game GAME]", programName);
+    std::println("  {} --info --mix FILE [--game GAME]", programName);
+    std::println("  {} --help", programName);
+    std::println("");
+    std::println("Modes:");
+    ShowHelpEntry("--extract", "Extract all files or a single file from an archive.");
+    ShowHelpEntry("--create", "Create a new archive from a directory or a single file.");
+    ShowHelpEntry("--add", "Add a file to an existing archive, or add a checksum.");
+    ShowHelpEntry("--remove", "Remove a file from an archive, or remove its checksum.");
+    ShowHelpEntry("--list", "List archive contents.");
+    ShowHelpEntry("--info", "Show archive metadata.");
+    std::println("");
+    std::println("Options:");
+    ShowHelpEntry("-?, --help", "Show this help message and exit.");
+    ShowHelpEntry("--mix FILE", "Archive to read or write.");
+    ShowHelpEntry("--file NAME", "File to extract, add, remove, or seed into a new archive.");
+    ShowHelpEntry("--id HEX", "Hexadecimal file id used for extraction.");
+    ShowHelpEntry("--directory DIR", "Source directory for create mode or destination for extraction.");
+    ShowHelpEntry("--game GAME", "Game database to use: td, ra, ts, or ra2. Default: td.");
+    ShowHelpEntry("--lmd", "Create a local mix database when creating an archive.");
+    ShowHelpEntry("--encrypt", "Write an encrypted header when creating an archive.");
+    ShowHelpEntry("--checksum", "Add a checksum, or remove it when used with --remove.");
+    std::println("");
+    std::println("Examples:");
+    std::println("  {} --list --mix CONQUER.MIX", programName);
+    std::println("  {} --extract --mix CONQUER.MIX --directory out", programName);
+    std::println("  {} --extract --mix CONQUER.MIX --id 1A2B3C4D --file local.bin",
+                 programName);
+    std::println("  {} --create --mix custom.mix --directory data --game ra2 --checksum",
+                 programName);
+    std::println("  {} --add --mix custom.mix --file rules.ini", programName);
 }
 
 inline void NoMultiMode(const std::string_view programName)
