@@ -189,15 +189,18 @@ class ArchiveHelpPrinter
         ShowEntry("l, list", "List archive contents.");
         ShowEntry("i, info", "Show archive metadata.");
         std::println("");
-        std::println("Switches:");
-        ShowEntry("-g{game}", "Select td, ra, ts, or ra2.");
-        ShowEntry("-o{dir}", "Extraction output directory.");
-        ShowEntry("-d{dir}", "Create source directory.");
-        ShowEntry("-f{file}", "Legacy single-file operand form.");
-        ShowEntry("-id{hex}", "Extract by file id.");
-        ShowEntry("-lmd[-]", "Enable or disable local mix database creation.");
-        ShowEntry("-encrypt[-]", "Enable or disable header encryption.");
-        ShowEntry("-checksum[-]", "Enable or disable checksum handling.");
+        std::println("Flags:");
+        ShowEntry("-?, --help", "Show this archive help and exit.");
+        ShowEntry("-g{game}, --game GAME", "Select td, ra, ts, or ra2.");
+        ShowEntry("-o{dir}, -out{dir}", "Extraction output directory.");
+        ShowEntry("-d{dir}, -dir{dir}", "Create source directory.");
+        ShowEntry("-f{file}, --file FILE", "Single file operand or legacy file switch.");
+        ShowEntry("-id{hex}, --id HEX", "Extract by hexadecimal file id.");
+        ShowEntry("-lmd[-], --lmd", "Enable or disable local mix database creation.");
+        ShowEntry("-encrypt[-], --encrypt", "Enable or disable header encryption.");
+        ShowEntry("-checksum[-], --checksum", "Enable or disable checksum handling.");
+        ShowEntry("--mix FILE", "Legacy archive-path switch.");
+        ShowEntry("--directory DIR, --dir DIR", "Legacy named directory switch.");
         ShowEntry("--", "Stop switch parsing and treat the rest as operands.");
         std::println("");
         std::println("Compatibility:");
@@ -207,9 +210,6 @@ class ArchiveHelpPrinter
         ShowEntry("--remove", "Legacy mode switch for delete.");
         ShowEntry("--list", "Legacy mode switch for list.");
         ShowEntry("--info", "Legacy mode switch for info.");
-        ShowEntry("--mix FILE", "Legacy archive-path switch.");
-        ShowEntry("--file FILE", "Legacy single-file switch.");
-        ShowEntry("--directory DIR", "Legacy directory switch.");
         std::println("");
         std::println("Examples:");
         std::println("  {} l CONQUER.MIX", programName);
@@ -224,7 +224,7 @@ class ArchiveHelpPrinter
     static void ShowEntry(const std::string_view syntax,
                           const std::string_view description)
     {
-        std::println("  {:<24} {}", syntax, description);
+        std::println("  {:<38} {}", syntax, description);
     }
 };
 

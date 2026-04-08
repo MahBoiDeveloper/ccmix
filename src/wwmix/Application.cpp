@@ -149,9 +149,40 @@ class HelpPrinter
         ShowEntry("mix", "Compatibility wrapper for archive commands.");
         ShowEntry("help", "Show top-level or command-specific help.");
         std::println("");
+        std::println("Archive Flags:");
+        ShowEntry("-?, --help", "Show top-level or command-specific help.");
+        ShowEntry("-g{game}, --game GAME", "Archive game hint: td, ra, ts, or ra2.");
+        ShowEntry("-o{dir}, -out{dir}", "Archive extraction output directory.");
+        ShowEntry("-d{dir}, -dir{dir}", "Archive create source directory.");
+        ShowEntry("-f{file}, --file FILE", "Archive single-file operand form.");
+        ShowEntry("-id{hex}, --id HEX", "Archive extraction by hexadecimal file id.");
+        ShowEntry("-lmd[-], --lmd", "Archive local mix database toggle.");
+        ShowEntry("-encrypt[-], --encrypt", "Archive encrypted-header toggle.");
+        ShowEntry("-checksum[-], --checksum", "Archive checksum toggle.");
+        ShowEntry("--extract / --create / --add", "Legacy archive mode switches.");
+        ShowEntry("--remove / --list / --info", "More legacy archive mode switches.");
+        ShowEntry("--mix FILE", "Legacy archive-path switch.");
+        ShowEntry("--directory DIR, --dir DIR", "Legacy archive directory switch.");
+        ShowEntry("--", "Stop archive switch parsing.");
+        std::println("");
+        std::println("GMD Flags:");
+        ShowEntry("--input GMD", "Existing global mix database file.");
+        ShowEntry("--additions CSV", "Text file containing name,description pairs.");
+        ShowEntry("--output GMD", "Destination path for the updated database.");
+        ShowEntry("--game GAME", "Game section to update: td, ra, ts, or ra2.");
+        std::println("");
+        std::println("Key Flags:");
+        ShowEntry("--mix FILE", "Encrypted MIX file to inspect.");
+        ShowEntry("--game GAME", "Header format hint for key decoding.");
+        std::println("");
         std::println("Compatibility:");
         std::println("  {} mix l CONQUER.MIX", programName);
         std::println("  {} --list --mix CONQUER.MIX", programName);
+        std::println("");
+        std::println("More Help:");
+        std::println("  {} help mix", programName);
+        std::println("  {} help gmd", programName);
+        std::println("  {} help key", programName);
     }
 
     static void ShowHelpUsage(const std::string_view programName)
@@ -174,7 +205,7 @@ class HelpPrinter
         std::println("");
         ShowGmdUsage(programName);
         std::println("");
-        std::println("Options:");
+        std::println("Flags:");
         ShowEntry("-?, --help", "Show this help message and exit.");
         ShowEntry("--input GMD", "Existing global mix database file.");
         ShowEntry("--additions CSV", "Text file containing name,description pairs.");
@@ -194,7 +225,7 @@ class HelpPrinter
         std::println("");
         ShowKeyUsage(programName);
         std::println("");
-        std::println("Options:");
+        std::println("Flags:");
         ShowEntry("-?, --help", "Show this help message and exit.");
         ShowEntry("--mix FILE", "Encrypted MIX file to inspect.");
         ShowEntry("--game GAME", "Header format hint: ra, ts, or ra2. Default: ra.");
@@ -209,7 +240,7 @@ class HelpPrinter
     static void ShowEntry(const std::string_view syntax,
                           const std::string_view description)
     {
-        std::println("  {:<28} {}", syntax, description);
+        std::println("  {:<38} {}", syntax, description);
     }
 };
 
