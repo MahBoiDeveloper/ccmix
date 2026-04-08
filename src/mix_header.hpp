@@ -5,8 +5,7 @@
  * Created on June 5, 2014, 4:37 PM
  */
 
-#ifndef MIX_HEADER_H
-#define	MIX_HEADER_H
+#pragma once
 
 #include "mixid.hpp"
 
@@ -135,5 +134,4 @@ private:
     //void setGame(Game game); //{ m_game_type = game; }
 };
 
-#endif	/* MIX_HEADER_H */
 

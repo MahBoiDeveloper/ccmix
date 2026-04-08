@@ -122,6 +122,23 @@ namespace
         return file.is_open();
     }
 
+#ifdef _WIN32
+    [[nodiscard]] std::optional<std::string> GetEnvironmentValue(const char* name)
+    {
+        char* value = NULL;
+        std::size_t length = 0;
+        const errno_t error = _dupenv_s(&value, &length, name);
+        if (error != 0 || value == NULL || length == 0) {
+            std::free(value);
+            return std::nullopt;
+        }
+
+        std::string result(value);
+        std::free(value);
+        return result;
+    }
+#endif
+
     [[nodiscard]] bool IsOptionToken(const std::string_view token)
     {
         return token.size() > 1 && token.front() == '-';
@@ -324,17 +341,17 @@ std::string GetHomeDir()
     std::string result;
 
 #ifdef _WIN32
-    tmp = std::getenv("HOMEDRIVE");
-    if (tmp == NULL) {
+    const std::optional<std::string> homeDrive = GetEnvironmentValue("HOMEDRIVE");
+    if (!homeDrive.has_value()) {
         return "";
     }
-    result = std::string(tmp);
+    result = *homeDrive;
 
-    tmp = std::getenv("HOMEPATH");
-    if (tmp == NULL) {
+    const std::optional<std::string> homePath = GetEnvironmentValue("HOMEPATH");
+    if (!homePath.has_value()) {
         return "";
     }
-    result += std::string(tmp);
+    result += *homePath;
 #else
     tmp = std::getenv("HOME");
     if (tmp == NULL) {

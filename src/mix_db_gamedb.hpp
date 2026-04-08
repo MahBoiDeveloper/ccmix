@@ -5,10 +5,12 @@
  * Created on June 3, 2014, 3:40 PM
  */
 
-#ifndef MIX_DB_GAMEDB_H
-#define	MIX_DB_GAMEDB_H
+#pragma once
 
+#include "mix_numeric.hpp"
 #include "mixid.hpp"
+
+#include <cstddef>
 #include <string>
 #include <fstream>
 #include <map>
@@ -25,7 +27,7 @@ public:
     bool AddName(const std::string& name, const std::string& description);
     bool DeleteName(const std::string& name);
     Game GetGame() const { return m_game_type; }
-    uint32_t GetSize() const { return m_size; }
+    uint32_t GetSize() const { return MixNumeric::ToUint32(m_size, "global database size"); }
     
 private:
     struct IdData {
@@ -38,11 +40,8 @@ private:
     typedef std::map<int32_t, IdData>::const_iterator IdIterator;
     
     IdMap m_name_map;
-    uint32_t m_size;
+    std::size_t m_size;
     uint32_t m_entries;
     Game m_game_type;
 };
-
-#endif	/* MIX_DB_GAMEDB_H */
-
 

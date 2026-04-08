@@ -5,12 +5,13 @@
  * Created on May 21, 2014, 11:57 AM
  */
 
-#ifndef MIX_DB_LMD_H
-#define	MIX_DB_LMD_H
+#pragma once
 
+#include "mix_numeric.hpp"
 #include "mixid.hpp"
+
+#include <cstddef>
 #include <fstream>
-//#include <vector>
 #include <map>
 
 class MixLmd
@@ -24,7 +25,7 @@ public:
     bool DeleteName(const std::string& name);
     bool DeleteName(int32_t id);
     Game GetGame() const { return m_game_type; }
-    uint32_t GetSize() const { return m_size; }
+    uint32_t GetSize() const { return MixNumeric::ToUint32(m_size, "local database size"); }
     std::string GetDbName() const { return "local mix database.dat"; }
     
 private:
@@ -33,11 +34,8 @@ private:
     typedef std::map<int32_t, std::string>::const_iterator IdIterator;
     static const char m_xcc_id[32];
     IdMap m_name_map;
-    uint32_t m_size;
+    std::size_t m_size;
     Game m_game_type;
     int32_t m_id;
 };
-
-#endif	/* MIX_DB_LMD_H */
-
 

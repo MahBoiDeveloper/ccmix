@@ -1,4 +1,5 @@
 #include "mix_db_gmd.hpp"
+#include "mix_numeric.hpp"
 
 MixGmd::MixGmd() :
 m_td_list(GameTd),
@@ -14,33 +15,41 @@ m_ra2_list(GameRa2)
 
 void MixGmd::ReadDb(std::fstream &fh)
 {
-    uint32_t begin, end, size, offset;
+    uint32_t offset = 0;
     
     // get file size
     fh.seekg(0, std::ios::beg);
-    begin = fh.tellg();
+    const std::streamoff begin = fh.tellg();
     fh.seekg(0, std::ios::end);
-    end = fh.tellg();
-    size = end - begin;
-    offset = 0;
+    const std::streamoff end = fh.tellg();
+    if (begin < 0 || end < begin) {
+        return;
+    }
+
+    const uint32_t size = MixNumeric::ToUint32(end - begin, "global mix database size");
+    if (size == 0) {
+        return;
+    }
     
     //read file into data buffer
-    //char data[size];
-	std::vector<char> data(size);
+    std::vector<char> data(size);
 
     fh.seekg(0, std::ios::beg);
-    fh.read(&data.at(0), size);
+    fh.read(data.data(), static_cast<std::streamsize>(size));
+    if (fh.gcount() != static_cast<std::streamsize>(size)) {
+        return;
+    }
     
     // read file from buffer into respective dbs
-    for (uint32_t i = 0; i < m_db_array.size(); i++){
-        m_db_array[i]->ReadDb(&data.at(0), offset);
+    for (std::size_t i = 0; i < m_db_array.size(); ++i) {
+        m_db_array[i]->ReadDb(data.data(), offset);
         offset += m_db_array[i]->GetSize();
     }
 }
 
 void MixGmd::WriteDb(std::fstream& fh)
 {
-    for (unsigned int i = 0; i < m_db_array.size(); i++){
+    for (std::size_t i = 0; i < m_db_array.size(); ++i) {
         m_db_array[i]->WriteDb(fh);
     }
 }

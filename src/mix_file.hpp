@@ -1,5 +1,4 @@
-#ifndef MIX_FILE_H
-#define	MIX_FILE_H
+#pragma once
 #include "mix_db_gmd.hpp"
 #include "mix_db_lmd.hpp"
 #include "mix_header.hpp"
@@ -119,5 +118,4 @@ protected:
     uint8_t m_checksum[20];
 };
 
-#endif	/* MIX_FILE_H */
 

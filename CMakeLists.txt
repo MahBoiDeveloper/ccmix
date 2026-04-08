@@ -55,10 +55,6 @@ if(MSVC AND CMAKE_GENERATOR MATCHES "Visual Studio" AND EXISTS "${CRYPTOPP_SUBMO
     COMMENT "Building vendored Crypto++ static library"
     VERBATIM
   )
-else()
-  find_package(Crypto++ REQUIRED)
-  if(NOT CRYPTOPP_FOUND)
-    message(FATAL_ERROR "libcrypto++ not found")
   endif()
 
   add_library(cryptopp_dependency INTERFACE)

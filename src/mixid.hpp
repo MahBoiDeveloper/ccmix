@@ -1,5 +1,4 @@
-#ifndef MIXID_H
-#define	MIXID_H
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -23,6 +22,5 @@ namespace MixId
     bool IsIdName(const std::string& fname);
 }
 
-#endif	/* MIXID_H */
 
 

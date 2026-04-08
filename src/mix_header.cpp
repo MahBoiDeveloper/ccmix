@@ -13,9 +13,9 @@
 #include <vector>
 
 const uint32_t REN_SIG = 0x3158494D;
-const char* PUBKEY = "0x51bcda086d39fce4565160d651713fa2e8aa54fa6682b04aabdd0e6af8b0c1e6d1fb4f3daa437f15";
+const std::string PUBKEY = "0x51bcda086d39fce4565160d651713fa2e8aa54fa6682b04aabdd0e6af8b0c1e6d1fb4f3daa437f15";
 //const char* PUBKEY = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
-const char* PRVKEY = "0x0a5637bc99139c47c422c67c54105e5bdbd0aeae4ab4d4334358274e1bdf5706a1fbf4e682893081";
+const std::string PRVKEY = "0x0a5637bc99139c47c422c67c54105e5bdbd0aeae4ab4d4334358274e1bdf5706a1fbf4e682893081";
 //const char* PRVKEY = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
 const int KEYSIZE = 56;
 
@@ -52,7 +52,7 @@ mix_encrypted(0x00020000)
     std::memset(m_key, 0, sizeof(m_key));
     Reset();
     //seed random number for generating random keys
-    srand(time(NULL));
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 }
 
 void MixHeader::Reset()
@@ -261,7 +261,7 @@ void MixHeader::SetKey()
     
     //setup RSA key structure
     RSA::PrivateKey rsakey;
-    rsakey.Initialize(Integer(PUBKEY), Integer("0x10001"), Integer(PRVKEY));
+    rsakey.Initialize(Integer(PUBKEY.c_str()), Integer("0x10001"), Integer(PRVKEY.c_str()));
     
     //reverse endianess of the keysource for cryptopp
     int i = 0;
@@ -303,7 +303,7 @@ void MixHeader::SetKeySource()
             
     //set our private key, this is other way round to decrypting
     RSA::PrivateKey rsakey;
-    rsakey.Initialize(Integer(PUBKEY), Integer(PRVKEY), Integer("0x10001"));
+    rsakey.Initialize(Integer(PUBKEY.c_str()), Integer(PRVKEY.c_str()), Integer("0x10001"));
     
     if(m_game_type > GameRa) {
         byte1 = 0x18;

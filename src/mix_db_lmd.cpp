@@ -62,8 +62,13 @@ void MixLmd::WriteDb(std::fstream& fh)
 {    
     // this is the rest of the header that follows xcc_id
     // two 0 constants are xcc type and xcc version according to xcc spec.
-    uint32_t xcc_head[] = {m_size, 0, 0, m_game_type, 
-                              static_cast<uint32_t>(m_name_map.size())};
+    const uint32_t xcc_head[] = {
+        GetSize(),
+        0,
+        0,
+        MixNumeric::ToUint32(static_cast<int>(m_game_type), "game type"),
+        MixNumeric::ToUint32(m_name_map.size(), "local database entry count")
+    };
     //xcc id
     fh.write(m_xcc_id, sizeof(m_xcc_id));
     //rest of header

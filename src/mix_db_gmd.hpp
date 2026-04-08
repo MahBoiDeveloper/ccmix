@@ -5,8 +5,7 @@
  * Created on May 30, 2014, 4:30 PM
  */
 
-#ifndef MIX_DB_GMD_H
-#define	MIX_DB_GMD_H
+#pragma once
 
 #include "mix_db_gamedb.hpp"
 
@@ -32,5 +31,4 @@ private:
     std::vector<MixGameDb*> m_db_array;
 };
 
-#endif	/* MIX_DB_GMD_H */
 
