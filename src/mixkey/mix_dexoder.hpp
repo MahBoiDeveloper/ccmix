@@ -8,13 +8,8 @@
 #ifndef MIX_DEXODER_H
 #define	MIX_DEXODER_H
 
+#include <cstdint>
 #include <cstring>
-
-#ifdef _MSC_VER
-#include "win32/stdint.hpp"
-#else
-#include <stdint.h>
-#endif
 
 
 void GetBlowfishKey(const uint8_t* s, uint8_t* d);

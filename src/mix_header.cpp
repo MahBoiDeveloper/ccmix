@@ -1,11 +1,5 @@
 #include "mix_header.hpp"
 
-#ifdef _MSC_VER
-
-#include <Windows.h>
-
-#endif
-
 #include "cryptopp/rsa.h"
 #include "cryptopp/blowfish.h"
 #include "cryptopp/integer.h"
@@ -14,7 +8,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
-#include <iostream>
+#include <print>
+#include <sstream>
 #include <vector>
 
 const uint32_t REN_SIG = 0x3158494D;
@@ -37,6 +32,14 @@ namespace
         T value = T();
         std::memcpy(&value, buffer, sizeof(T));
         return value;
+    }
+
+    template <typename T>
+    std::string HexString(const T& value)
+    {
+        std::ostringstream stream;
+        stream << std::hex << value;
+        return stream.str();
     }
 }
 
@@ -77,15 +80,14 @@ bool MixHeader::ReadHeader(std::fstream &fh)
     //std::cout << MixId::IdStr(flagbuff, 6) << " Retrieved from header." << std::endl;
     
     if(BufferValue<uint32_t>(flagbuff) == REN_SIG){
-        std::cout << "Error, Renegade mix format not supported." << std::endl;
+        std::println("Error, Renegade mix format not supported.");
         return false;
     }
     
     if(BufferValue<uint16_t>(flagbuff)) {
         if(m_game_type > 1){
             //m_game_type = GameTd;
-            std::cout << "Warning, header indicates mix is of type \"GameTd\" "<<
-                    " but isn't what you specified" << std::endl;
+            std::println("Warning, header indicates mix is of type \"GameTd\" but isn't what you specified");
         }
         
         m_file_count = BufferValue<uint16_t>(flagbuff);
@@ -95,7 +97,7 @@ bool MixHeader::ReadHeader(std::fstream &fh)
         
     } else {
         if(!m_game_type){
-            std::cout << "Warning, game type is td but header is new format." << std::endl;
+            std::println("Warning, game type is td but header is new format.");
         }
         //lets work out what kind of header we have
         m_header_flags = BufferValue<int32_t>(flagbuff);
@@ -135,7 +137,7 @@ bool MixHeader::ReadUnencrypted(std::fstream &fh)
         fh.read(reinterpret_cast<char*>(&entry.second), sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
-            std::cout << "Error reading header, duplicate ID" << std::endl;
+            std::println("Error reading header, duplicate ID");
             return false;
         }
     }
@@ -193,7 +195,7 @@ bool MixHeader::ReadEncrypted(std::fstream& fh)
                sizeof(IndexInfo));
         rv = m_index.insert(entry);
         if(!rv.second) {
-            std::cout << "Error reading header, duplicate ID" << std::endl;
+            std::println("Error reading header, duplicate ID");
             return false;
         }
     }
@@ -215,7 +217,7 @@ bool MixHeader::ReadKeySource(std::fstream& fh)
     int32_t flags = BufferValue<int32_t>(flagbuff);
     
     if(flags != mix_encrypted && flags != mix_encrypted + mix_checksum) {
-        std::cout << "key_source not suitable." << std::endl;
+        std::println("key_source not suitable.");
         return false;
     }
     
@@ -291,7 +293,7 @@ void MixHeader::SetKey()
     }
 }
 
-//This function is called by setEncrypted and generated a new key
+/// @brief Generate a new key source for encrypted headers.
 void MixHeader::SetKeySource()
 {
     //buffer for flipping the array
@@ -335,8 +337,8 @@ void MixHeader::SetKeySource()
     Integer keyblk1 = blowfish >> 312;
     Integer keyblk2 = blowfish - (keyblk1 << 312);
     
-    std::cout << "Generated Blowfish Key:\n";
-    std::cout << std::hex << blowfish << std::dec << "\n";
+    std::println("Generated Blowfish Key:");
+    std::println("{}", HexString(blowfish));
     
     //encrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);
@@ -451,7 +453,7 @@ bool MixHeader::AddEntry(int32_t id, uint32_t size)
     
     rv = m_index.insert(entry);
     if(!rv.second) {
-        std::cout << "Error entry not added, duplicate ID of " << entry.first << std::endl;
+        std::println("Error entry not added, duplicate ID of {}", entry.first);
         return false;
     }
     m_body_size += size;
@@ -465,7 +467,7 @@ bool MixHeader::RemoveEntry(int32_t id, bool adjust)
     MixIndexIterator old = m_index.find(id);
     
     if(old == m_index.end()) {
-        std::cout << "Element not found" << std::endl;
+        std::println("Element not found");
         return false;
     }
     

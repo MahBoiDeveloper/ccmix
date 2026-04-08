@@ -7,8 +7,8 @@
 #include "cryptopp/osrng.h"
 #include "cryptopp/modes.h"
 #include "cryptopp/secblock.h"
+#include <print>
 #include <sstream>
-#include <iostream>
 #include <fstream>
 
 extern const char *pubkey_str;
@@ -19,6 +19,17 @@ using namespace CryptoPP;
 
 const uint8_t inverse[] = { 0x8, 0xf, 0x6, 0x1, 0x5, 0x2, 0xb, 0xc, 0x3, 0x4, 0xd, 0xa, 0xe, 0x9, 0x0, 0x7 };
 const uint8_t shadows[] = { 0xe, 0x3, 0x5, 0x8, 0x9, 0x4, 0x2, 0xf, 0x0, 0xd, 0xb, 0x6, 0x7, 0xa, 0xc, 0x1 };
+
+namespace
+{
+    template <typename T>
+    std::string HexString(const T& value)
+    {
+        std::ostringstream stream;
+        stream << std::hex << value;
+        return stream.str();
+    }
+}
 
 void BintToBfish(Integer& bint, uint8_t* key, int len = 56)
 {
@@ -79,15 +90,15 @@ int main(int argc, char* argv[])
     /*
     n.Encode(keybuf, 40);
     for(int i = 0; i < 40; i++) {
-        printf("%02x", keybuf[i]);
+        std::print("{:02x}", keybuf[i]);
     }
-    std::cout << "\n\n";
+    std::print("\n\n");
      
     d.Encode(keybuf, 40);
     for(int i = 0; i < 40; i++) {
-        printf("%02x", keybuf[i]);
+        std::print("{:02x}", keybuf[i]);
     }
-    std::cout << "\n\n";
+    std::print("\n\n");
     */
     
     //std::cout << std::dec << n.BitCount() << "\n";
@@ -97,10 +108,10 @@ int main(int argc, char* argv[])
     //std::cout << std::dec << d.BitCount() << "\n";
     //std::cout << std::hex << d << "\n\n";
     
-    std::cout << "XCC code blowfish key, encoded part 1 and 2:\n";
-    std::cout << std::hex << bfshkeyint << "\n";
-    std::cout << std::hex << keyblk1 << "\n";
-    std::cout << std::hex << keyblk2 << "\n\n";
+    std::println("XCC code blowfish key, encoded part 1 and 2:");
+    std::println("{}", HexString(bfshkeyint));
+    std::println("{}", HexString(keyblk1));
+    std::println("{}\n", HexString(keyblk2));
     
     AutoSeededRandomPool rng;
     
@@ -124,10 +135,10 @@ int main(int argc, char* argv[])
     //std::cout << std::dec << blowfishkey.BitCount() << "\n";
     //std::cout << std::hex << blowfishkey << "\n";
     
-    std::cout << "RSA blowfish key, decoded part1 and 2:\n";
-    std::cout << std::hex << blowfishkey << "\n";
-    std::cout << std::hex << dec1 << "\n";
-    std::cout << std::hex << dec2 << "\n\n";
+    std::println("RSA blowfish key, decoded part1 and 2:");
+    std::println("{}", HexString(blowfishkey));
+    std::println("{}", HexString(dec1));
+    std::println("{}\n", HexString(dec2));
     
     BintToBfish(blowfishkey, nukey);
     //Integer testkey(nukey, 56);

@@ -1,5 +1,4 @@
 #include "mix_db_gmd.hpp"
-#include <iostream>
 
 MixGmd::MixGmd() :
 m_td_list(GameTd),

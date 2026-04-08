@@ -1,93 +1,41 @@
 #include "mix_file.hpp"
 
-#ifdef _MSC_VER
-
-#include <Windows.h>
-
-#endif
-
 #include "cryptopp/sha.h"
 #include "cryptopp/integer.h"
 #include <cstdio>
-#include <iostream>
-#include <iomanip>
 #include <algorithm>
-
-#ifdef _MSC_VER
-#include "win32/dirent.hpp"
-#else
-#include <dirent.h>
-#endif
-
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <filesystem>
+#include <limits>
+#include <print>
 
 using CryptoPP::SHA1;
 
-#ifdef _WIN32
-
-#define DIR_SEPARATOR '\\'
-
-#else
-
-#define DIR_SEPARATOR '/'
-
-#endif
-
 namespace
 {
+    namespace fs = std::filesystem;
+
     const char* const TempFilePath = "~ccmix.tmp";
     const std::streamsize CopyBufferSize = 32 * 1024;
 
-    class DirectoryHandle
-    {
-    public:
-        explicit DirectoryHandle(DIR* handle) : m_handle(handle) {}
-        ~DirectoryHandle()
-        {
-            if (m_handle != NULL) {
-                closedir(m_handle);
-            }
-        }
-
-        bool IsOpen() const
-        {
-            return m_handle != NULL;
-        }
-
-        DIR* Get() const
-        {
-            return m_handle;
-        }
-
-    private:
-        DirectoryHandle(const DirectoryHandle&);
-        DirectoryHandle& operator=(const DirectoryHandle&);
-
-        DIR* m_handle;
-    };
-
     std::string JoinPath(const std::string& directory, const std::string& name)
     {
-        if (directory.empty()) {
-            return name;
-        }
-
-        if (directory[directory.size() - 1] == DIR_SEPARATOR) {
-            return directory + name;
-        }
-
-        return directory + DIR_SEPARATOR + name;
+        return (fs::path(directory) / name).string();
     }
 
-    bool ReadFileStat(const std::string& path, struct stat& st)
+    bool TryGetRegularFileSize(const fs::path& path, uint32_t& size)
     {
-        return stat(path.c_str(), &st) == 0;
-    }
+        std::error_code error;
+        if (!fs::is_regular_file(path, error) || error) {
+            return false;
+        }
 
-    bool IsRegularFile(const std::string& path, struct stat& st)
-    {
-        return ReadFileStat(path, st) && !S_ISDIR(st.st_mode);
+        const std::uintmax_t fileSize = fs::file_size(path, error);
+        if (error || fileSize > std::numeric_limits<uint32_t>::max()) {
+            return false;
+        }
+
+        size = static_cast<uint32_t>(fileSize);
+        return true;
     }
 
     std::streamoff GetStreamSize(std::istream& stream)
@@ -190,14 +138,7 @@ namespace
 
 std::string MixFile::BaseName(const std::string& pathname) const
 {
-    std::string rv = pathname;
-    const std::string::size_type last_slash_idx = rv.find_last_of("\\/");
-    if (std::string::npos != last_slash_idx)
-    {
-        rv.erase(0, last_slash_idx + 1);
-    }
-    
-    return rv;
+    return fs::path(pathname).filename().string();
 }
 
 MixFile::MixFile(const std::string& gmd, Game game) :
@@ -215,7 +156,7 @@ m_file_path()
         m_global_db.ReadDb(gmdfile);
         gmdfile.close();
     } else {
-        std::cout << "Could not open global mix database.dat" << std::endl;
+        std::println("Could not open global mix database.dat");
     }
 }
 
@@ -237,7 +178,7 @@ bool MixFile::Open(const std::string& path)
     
     fh.open(path.c_str(), std::fstream::in | std::fstream::out | std::fstream::binary);
     if (!fh.is_open()) {
-        std::cout << "File " << path << " failed to open" << std::endl;
+        std::println("File {} failed to open", path);
         return false;
     }
     
@@ -343,7 +284,6 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
 {
     (void)key_src;
 
-    struct stat st;
     std::vector<std::string> filenames; // file names
     
     if(encrypted) m_header.SetIsEncrypted();
@@ -354,24 +294,31 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
         cout << "Header will be encrypted." << endl;
     }*/
     
-    //make sure we can open the directory
-    DirectoryHandle directory(opendir(in_dir.c_str()));
-    if(!directory.IsOpen()) {
-        std::cout << "Error opening " << in_dir << std::endl;
+    //make sure we can iterate the directory
+    const fs::path inputDirectory(in_dir);
+    std::error_code directoryError;
+    fs::directory_iterator iterator(inputDirectory, directoryError);
+    if(directoryError) {
+        std::println("Error opening {}", in_dir);
         return false;
     }
     
     //iterate through entries in directory, ignoring directories
-    for (struct dirent *dirp = readdir(directory.Get()); dirp != NULL;
-         dirp = readdir(directory.Get())) {
-        const std::string filename(dirp->d_name);
-        const std::string file_path = JoinPath(in_dir, filename);
-        if(IsRegularFile(file_path, st)){
+    for (fs::directory_iterator end; iterator != end; iterator.increment(directoryError)) {
+        if (directoryError) {
+            std::println("Error opening {}", in_dir);
+            return false;
+        }
+
+        const fs::directory_entry& directoryEntry = *iterator;
+        uint32_t fileSize = 0;
+        if(TryGetRegularFileSize(directoryEntry.path(), fileSize)){
+            const std::string filename = directoryEntry.path().filename().string();
             
             //check if we have an ID containing file name, if not add to localdb
             if(!MixId::IsIdName(filename)){
                 if(!m_local_db.AddName(filename)) {
-                    std::cout << "Skipping " << filename << ", ID Collision" << std::endl;
+                    std::println("Skipping {}, ID Collision", filename);
                     continue;
                 }
             }
@@ -379,7 +326,7 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
             //try adding entry to header, skip if failed
             if(!m_header.AddEntry(MixId::IdGen(m_header.GetGame(), 
                                   filename), 
-                                  st.st_size)) {
+                                  fileSize)) {
                 continue;
             }
             
@@ -418,19 +365,19 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
             std::fstream::binary | std::fstream::trunc);
     
     if(!fh.is_open()){
-        std::cout << "Failed to create empty file" << std::endl;
+        std::println("Failed to create empty file");
         return false;
     }
     
     //write a header
     if(!m_header.WriteHeader(fh)) {
-        std::cout << "Failed to write header." << std::endl;
+        std::println("Failed to write header.");
         return false;
     }
     
     //cout << "Writing the body now" << endl;
     
-    std::cout << "Writing " << filenames.size() << " files." << std::endl;
+    std::println("Writing {} files.", filenames.size());
     
     //write the body, offset is set in header based on when added so should match
     for(unsigned int i = 0; i < filenames.size(); i++){
@@ -438,10 +385,10 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
         if(with_lmd && i == filenames.size() - 1) break;
         
         const std::string input_path = JoinPath(in_dir, filenames[i]);
-        std::cout << input_path << std::endl;
+        std::println("{}", input_path);
         std::fstream ifile(input_path.c_str(), std::fstream::in | std::fstream::binary);
         if(!ifile.is_open()) {
-            std::cout << "Could not open input file " << filenames[i] << std::endl;
+            std::println("Could not open input file {}", filenames[i]);
             return false;
         }
         if (!CopyToEnd(ifile, fh)) {
@@ -471,7 +418,6 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
 
 bool MixFile::AddFile(const std::string& name)
 {
-    struct stat st;
     std::fstream ofh;
     IndexInfo lmd;
     IndexInfo old;
@@ -481,7 +427,7 @@ bool MixFile::AddFile(const std::string& name)
     //get filename without path info
     const std::string basename = BaseName(name);
     
-    std::cout << "Adding " << basename << std::endl;
+    std::println("Adding {}", basename);
     
     //save the old data offset from header before we started changing it.
     const std::streamoff old_offset = m_header.GetHeaderSize();
@@ -501,19 +447,20 @@ bool MixFile::AddFile(const std::string& name)
     if(old.size) {
         m_skip[old.offset] = old.size;
         m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(), basename), true);
-        std::cout << "A file with the same ID exists and will be replaced." << std::endl;
+        std::println("A file with the same ID exists and will be replaced.");
     }
     
     //stat file to add and check its not a directory
-    if(!IsRegularFile(name, st)){
-        std::cout << "Cannot add directory as a file" << std::endl;
+    uint32_t fileSize = 0;
+    if(!TryGetRegularFileSize(name, fileSize)){
+        std::println("Cannot add directory as a file");
         return false;
     }
 
     if (!old.size && !MixId::IsIdName(basename) && !m_local_db.AddName(basename)) {
         return false;
     }
-    m_header.AddEntry(MixId::IdGen(m_header.GetGame(), basename), st.st_size);
+    m_header.AddEntry(MixId::IdGen(m_header.GetGame(), basename), fileSize);
     
     //if the lmd had a size before (thus existed), add it back to header now
     if(lmd.size) {
@@ -524,7 +471,7 @@ bool MixFile::AddFile(const std::string& name)
     //open a temp file
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
     if(!ofh.is_open()){
-        std::cout << "Couldn't open a temporary file to buffer the changes" << std::endl;
+        std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
     
@@ -543,14 +490,14 @@ bool MixFile::AddFile(const std::string& name)
     //open the file to add, if we can't open, bail and delete temp file
     std::fstream ifh(name.c_str(), std::ios::binary | std::ios::in);
     if(!ifh.is_open()){
-        std::cout << "Failed to open file to add" << std::endl;
+        std::println("Failed to open file to add");
         ofh.close();
         RemoveTempFile();
         return false;
     }
     
     //add new file to mix body
-    if (!CopyExact(ifh, ofh, st.st_size)) {
+    if (!CopyExact(ifh, ofh, fileSize)) {
         ifh.close();
         ofh.close();
         RemoveTempFile();
@@ -624,7 +571,7 @@ bool MixFile::RemoveFile(int32_t id)
     //open a temp file
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
     if(!ofh.is_open()){
-        std::cout << "Couldn't open a temporary file to buffer the changes" << std::endl;
+        std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
     
@@ -662,7 +609,7 @@ bool MixFile::AddChecksum()
 {
     //check if we think this file is checksummed already
     if(m_header.GetHasChecksum()){
-        std::cout << "File is already flagged as having a checksum" << std::endl;
+        std::println("File is already flagged as having a checksum");
         return false;
     }
     
@@ -684,13 +631,13 @@ bool MixFile::RemoveChecksum()
     
     //check if we think this file is checksummed already
     if(!m_header.GetHasChecksum()){
-        std::cout << "File is already flagged as not having a checksum" << std::endl;
+        std::println("File is already flagged as not having a checksum");
         return false;
     }
     
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
     if(!ofh.is_open()){
-        std::cout << "Couldn't open a temporary file to buffer the changes" << std::endl;
+        std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
     
@@ -736,9 +683,8 @@ bool MixFile::WriteChecksum(std::fstream &fh, int32_t pos)
     // get our hash and print it to console as well
     sha1.Final(hash);
     std::copy(hash, hash + 20, m_checksum);
-    std::cout << "Checksum is "
-    << MixId::IdStr(reinterpret_cast<const char*>(hash), 20);
-    std::cout << std::endl;
+    std::println("Checksum is {}",
+            MixId::IdStr(reinterpret_cast<const char*>(hash), 20));
     
     //write checksum, pos is position from end to start at.
     fh.seekp(pos, std::ios::end);
@@ -758,9 +704,8 @@ void MixFile::PrintFileList()
             fname = m_global_db.GetName(m_header.GetGame(), it->first);
         }
         
-        std::cout << std::setw(24) << fname << std::setw(10) << MixId::IdStr(it->first) <<
-                std::setw(12) << it->second.offset << std::setw(12) << 
-                it->second.size << std::endl;
+        std::println("{:>24}{:>10}{:>12}{:>12}",
+                fname, MixId::IdStr(it->first), it->second.offset, it->second.size);
         it++;
     }
 }
@@ -768,28 +713,26 @@ void MixFile::PrintFileList()
 void MixFile::PrintInfo()
 {
     if(m_header.GetGame()){
-        std::cout << "This mix is a new style mix that supports header encryption"
+        std::print("This mix is a new style mix that supports header encryption"
                 " and checksums.\nRed Alert onwards can read this type of mix"
-                " but the ID's used differ between Red Alert and later games.\n"
-                << std::endl;
+                " but the ID's used differ between Red Alert and later games.\n\n");
     } else {
-        std::cout << "This mix is an old style mix that doesn't support header"
+        std::print("This mix is an old style mix that doesn't support header"
                 " encryption or\nchecksums.\nTiberian Dawn and Sole Survivor"
                 " use this format exclusively and Red Alert can\nuse them as well"
-                ".\n" << std::endl;
+                ".\n\n");
     }
-    std::cout << "It contains " << m_header.GetFileCount() << " files"
-            " which take up " << m_header.GetBodySize() << " bytes\n" << std::endl;
+    std::println("It contains {} files which take up {} bytes\n",
+            m_header.GetFileCount(), m_header.GetBodySize());
     if(m_header.GetIsEncrypted()){
-        std::cout << "The mix has an encrypted header.\n\nThe blowfish key is " <<
-                MixId::IdStr(m_header.GetKey(), 56) << "\n" << std::endl;
-        std::cout << "The key was recovered from the following key source:\n" <<
-                MixId::IdStr(m_header.GetKeySource(), 80) << "\n" <<
-                std::endl;
+        std::println("The mix has an encrypted header.\n\nThe blowfish key is {}\n",
+                MixId::IdStr(m_header.GetKey(), 56));
+        std::println("The key was recovered from the following key source:\n{}\n",
+                MixId::IdStr(m_header.GetKeySource(), 80));
     }
     if(m_header.GetHasChecksum()){
-        std::cout << "The mix has a SHA1 checksum:\nSHA1: " << 
-                MixId::IdStr(reinterpret_cast<const char*>(m_checksum), 20) << "\n" << std::endl;
+        std::println("The mix has a SHA1 checksum:\nSHA1: {}\n",
+                MixId::IdStr(reinterpret_cast<const char*>(m_checksum), 20));
     }
 }
 
@@ -856,12 +799,12 @@ bool MixFile::OverwriteOld(const std::string& temp)
     Close();
 
     if (std::remove(m_file_path.c_str()) != 0) {
-        std::cout << "Failed to remove the original mix file" << std::endl;
+        std::println("Failed to remove the original mix file");
         return false;
     }
 
     if (std::rename(temp.c_str(), m_file_path.c_str()) != 0) {
-        std::cout << "Failed to rename the temporary mix file" << std::endl;
+        std::println("Failed to rename the temporary mix file");
         return false;
     }
     

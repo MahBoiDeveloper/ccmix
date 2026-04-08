@@ -6,7 +6,6 @@
  */
 
 #include "../mix_db_gmd.hpp"
-#include <stdio.h>
 #include <print>
 
 typedef std::pair<std::string, std::string> NamePair;

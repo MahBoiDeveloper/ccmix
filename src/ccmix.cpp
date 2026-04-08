@@ -159,7 +159,7 @@ namespace
     }
 }
 
-// get program directory from argv[0]
+/// @brief Get the directory that contains the program executable.
 static std::string GetProgramDir(const std::string_view programLocation)
 {
     const std::string_view::size_type separator = programLocation.find_last_of("\\/");
@@ -170,8 +170,8 @@ static std::string GetProgramDir(const std::string_view programLocation)
     return std::string(programLocation.substr(0, separator));
 }
 
-// search and test a few locations for a global mix database
-// TODO copy gmd if found but not in a home dir config.
+/// @brief Search a few locations for the global mix database.
+/// TODO copy gmd if found but not in a home dir config.
 std::string FindGmd(const std::string& programDir, const std::string& homeDir)
 {
     const std::string gmdLocation = "global mix database.dat";

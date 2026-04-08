@@ -3,16 +3,11 @@
 #include "mix_db_gmd.hpp"
 #include "mix_db_lmd.hpp"
 #include "mix_header.hpp"
+#include <cstdint>
 #include <string>
 #include <fstream>
 #include <vector>
 #include <map>
-
-#ifdef _MSC_VER
-#include "win32/stdint.hpp"
-#else
-#include <stdint.h>
-#endif
 
 /**
  * @brief Mix Databases.
@@ -43,114 +38,67 @@ public:
     MixFile(const std::string& gmd = "global mix database.dat" , 
             Game openGame = GameTd);
     virtual ~MixFile();
-    /**
-     * @brief Open mix archive
-     * @param path mix file path
-     * @retval true file opened
-     * @retval false file not found
-     */
+    /// @brief Open a mix archive.
+    /// @param path Mix file path.
+    /// @retval true The file was opened.
+    /// @retval false The file was not found.
     bool Open(const std::string& path);
-    /**
-     * @brief extract file from mix archive
-     * @param fileID CRC ID of file
-     * @param outPath extracted file path
-     * @retval true file extracted
-     * @retval false file not present in the archive 
-     */
+    /// @brief Extract a file from the mix archive by CRC ID.
+    /// @param fileID CRC ID of the file.
+    /// @param outPath Extracted file path.
+    /// @retval true The file was extracted.
+    /// @retval false The file is not present in the archive.
     bool ExtractFile(int32_t fileID, const std::string& outPath);
-    /**
-     * @brief extract file from mix archive
-     * @param fileName name of file
-     * @param outPath extracted file path
-     * @retval true file extracted
-     * @retval false file not present in the archive 
-     */
+    /// @brief Extract a file from the mix archive by file name.
+    /// @param fileName Name of the file.
+    /// @param outPath Extracted file path.
+    /// @retval true The file was extracted.
+    /// @retval false The file is not present in the archive.
     bool ExtractFile(const std::string& fileName, const std::string& outPath);
-    /**
-     * @brief extract all files from the archive
-     * @param outPath output directory
-     * @param withFileNames try to get file names of the content
-     * @return true if extraction successful
-     */
+    /// @brief Extract all files from the archive.
+    /// @param outPath Output directory.
+    /// @return `true` if extraction was successful.
     bool ExtractAll(const std::string& outPath = ".");
-     /**
-     * @brief Creates a new mix file
-     * @param fileName name and path of mix to create
-     * @param infiles vector containing files to add to the new mix
-     * @param game game the mix should be compatible with
-     * @param in_dir location we should create the new mix at
-     * @param with_lmd should we generate a local mix database for this mix
-     * @param encrypted should we encrypt the header of this mix
-     * @param checksum should we generate a checksum for this mix
-     * @param key_src string of the path to a key_source to use in encryption
-     * @return true if creation is successful
-     */
+    /// @brief Create a new mix file.
+    /// @param fileName Name and path of the mix to create.
+    /// @param in_dir Directory whose contents should be packed into the mix.
+    /// @param with_lmd Generate a local mix database for the mix.
+    /// @param encrypted Encrypt the mix header.
+    /// @param checksum Generate a checksum for the mix.
+    /// @param key_src Path to a key source to use for encryption.
+    /// @return `true` if creation was successful.
     bool CreateMix(const std::string& fileName, const std::string& in_dir, bool with_lmd = false, 
                    bool encrypted = false, bool checksum = false, 
                    const std::string& key_src = "");
-    /**
-     * @brief adds a sha1 checksum to the end of the file and flags it in the
-     *        header.
-     * @return true if successful
-     */
+    /// @brief Add a SHA1 checksum to the end of the file and flag it in the header.
+    /// @return `true` if the checksum was added successfully.
     bool AddChecksum();
-    /**
-     * @brief removes the sha1 checksum to the end of the file and flags it in the
-     *        header.
-     * @return true if successful
-     */
+    /// @brief Remove the SHA1 checksum from the file and clear the header flag.
+    /// @return `true` if the checksum was removed successfully.
     bool RemoveChecksum();
-    /**
-     * @brief checks, if file is present in the archive and adds if not
-     * @param name file name
-     * @return true if successful
-     */
+    /// @brief Add a file to the archive when it is not already present.
+    /// @param name File name.
+    /// @return `true` if the file was added successfully.
     bool AddFile(const std::string& name);
-     /**
-     * @brief checks, if file is present in the archive and removes if so
-     * @param name file name
-     * @return true if successful
-     */
+    /// @brief Remove a file from the archive by name when it is present.
+    /// @param name File name.
+    /// @return `true` if the file was removed successfully.
     bool RemoveFile(const std::string& name);
-     /**
-     * @brief checks, if file is present in the archive and removes if so
-     * @param name file name
-     * @return true if successful
-     */
+    /// @brief Remove a file from the archive by ID when it is present.
+    /// @param id File ID.
+    /// @return `true` if the file was removed successfully.
     bool RemoveFile(int32_t id);
-    /**
-     * @brief checks, if file is present in the archive
-     * @param id id of filename
-     * @return true if present
-     */
+    /// @brief Check whether a file name is present in the archive.
+    /// @param name File name to test.
+    /// @return `true` if the file is present.
     bool CheckFileName(const std::string& name) const;
-    /**
-     * @brief mix archive header
-     * 
-     * Prints header in following format:
-     * file CRC (hex) || file offset (dec) || file size (dec)
-     * @param flags print settings
-     * @return file text list
-     */
+    /// @brief Print the mix archive file list.
+    /// Prints file CRC, file offset, and file size.
     void PrintFileList();
-    /**
-     * @brief mix archive header
-     * 
-     * Prints information about the mix file:
-     * file CRC (hex) || file offset (dec) || file size (dec)
-     */
+    /// @brief Print information about the mix file.
     void PrintInfo();
-    /**
-     * @brief save file in decrypted format
-     * @param outPath output filename
-     * @return true if successful
-     */
-    
-    /**
-     * @brief Close mix file 
-     * 
-     * Prepare for opening another file.
-     */
+    /// @brief Close the mix file.
+    /// Prepare the object for opening another file.
     void Close();
 protected:
     typedef std::map<uint32_t, uint32_t> SkipMap;

@@ -1,13 +1,8 @@
 #ifndef MIXID_H
 #define	MIXID_H
 
+#include <cstdint>
 #include <string>
-
-#ifdef _MSC_VER
-#include "win32/stdint.hpp"
-#else
-#include <stdint.h>
-#endif
 
 typedef enum 
 { 
