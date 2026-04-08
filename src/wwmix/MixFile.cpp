@@ -205,6 +205,81 @@ class MixFileInfoSupport
     }
 };
 
+class MixFileNameHeuristics
+{
+  public:
+    static std::string ResolveMmxName(const std::string &archivePath,
+                                      const Game game, const int32_t id)
+    {
+        const std::filesystem::path path = std::filesystem::u8path(archivePath);
+        std::string extension = ToUtf8(path.extension());
+        LowerAscii(extension);
+        if (extension != ".mmx")
+        {
+            return "";
+        }
+
+        const std::string stem = ToUtf8(path.stem());
+        if (stem.empty())
+        {
+            return "";
+        }
+
+        for (const std::string &candidate : BuildMmxCandidates(stem))
+        {
+            if (MixId::IdGen(game, candidate) == id)
+            {
+                return candidate;
+            }
+        }
+
+        return "";
+    }
+
+  private:
+    static std::string ToUtf8(const std::filesystem::path &path)
+    {
+        const std::u8string text = path.u8string();
+        return std::string(text.begin(), text.end());
+    }
+
+    static void LowerAscii(std::string &text)
+    {
+        for (char &value : text)
+        {
+            if (value >= 'A' && value <= 'Z')
+            {
+                value = static_cast<char>(value - 'A' + 'a');
+            }
+        }
+    }
+
+    static std::vector<std::string> BuildMmxCandidates(const std::string &stem)
+    {
+        std::vector<std::string> candidates;
+        candidates.reserve(206);
+
+        candidates.push_back(stem + ".pkt");
+        candidates.push_back(stem + ".map");
+        candidates.push_back(stem + ".mpr");
+        candidates.push_back(stem + ".yrm");
+        candidates.push_back(stem + ".yro");
+
+        for (int index = 0; index <= 99; ++index)
+        {
+            const std::string suffix =
+                index < 10 ? "0" + std::to_string(index) :
+                             std::to_string(index);
+            candidates.push_back(stem + suffix + ".map");
+            candidates.push_back(stem + suffix + ".mpr");
+            candidates.push_back(stem + suffix + ".yrm");
+            candidates.push_back(stem + suffix + ".yro");
+        }
+
+        return candidates;
+    }
+};
+
 class MixFileGameResolver
 {
   public:
@@ -1010,6 +1085,16 @@ std::string MixFile::ResolveName(const int32_t id) const
     if (name.substr(0, 4) == "[id]")
     {
         name = m_global_db.GetName(m_header.GetGame(), id);
+    }
+    if (name.substr(0, 4) == "[id]")
+    {
+        const std::string heuristicName =
+            MixFileNameHeuristics::ResolveMmxName(m_file_path,
+                                                  m_header.GetGame(), id);
+        if (!heuristicName.empty())
+        {
+            name = heuristicName;
+        }
     }
 
     return name;
