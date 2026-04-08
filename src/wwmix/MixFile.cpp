@@ -379,6 +379,84 @@ class MixFileGameResolver
     }
 };
 
+class MixFileEntrySupport
+{
+  public:
+    static constexpr uint32_t InvalidValue =
+        std::numeric_limits<uint32_t>::max();
+
+    static bool HasSentinelValue(const IndexInfo &entry)
+    {
+        return entry.offset == InvalidValue || entry.size == InvalidValue;
+    }
+
+    static bool TryGetEndOffset(const IndexInfo &entry, uint64_t &endOffset)
+    {
+        if (HasSentinelValue(entry))
+        {
+            return false;
+        }
+
+        endOffset =
+            static_cast<uint64_t>(entry.offset) + static_cast<uint64_t>(entry.size);
+        return true;
+    }
+
+    static bool IsReadable(const IndexInfo &entry, const uint32_t bodySize)
+    {
+        uint64_t endOffset = 0;
+        return TryGetEndOffset(entry, endOffset) && endOffset <= bodySize;
+    }
+
+    static uint32_t DataLimit(const MixHeader &header, const std::streamoff fileSize)
+    {
+        const uint64_t headerSize = header.GetHeaderSize();
+        const uint64_t checksumSize = header.GetHasChecksum() ? 20u : 0u;
+        if (fileSize < 0)
+        {
+            return 0;
+        }
+
+        const uint64_t totalSize = static_cast<uint64_t>(fileSize);
+        if (totalSize <= headerSize + checksumSize)
+        {
+            return 0;
+        }
+
+        return static_cast<uint32_t>(totalSize - headerSize - checksumSize);
+    }
+
+    static uint32_t RecoverBodySize(const MixHeader &header,
+                                    const std::streamoff fileSize)
+    {
+        const uint64_t dataLimit = DataLimit(header, fileSize);
+        uint64_t recoveredBodySize = 0;
+
+        for (MixIndexConstIterator it = header.GetBegin();
+             it != header.GetEnd();
+             ++it)
+        {
+            uint64_t endOffset = 0;
+            if (!TryGetEndOffset(it->second, endOffset))
+            {
+                continue;
+            }
+
+            if (endOffset <= dataLimit && endOffset > recoveredBodySize)
+            {
+                recoveredBodySize = endOffset;
+            }
+        }
+
+        if (recoveredBodySize == 0)
+        {
+            recoveredBodySize = dataLimit;
+        }
+
+        return static_cast<uint32_t>(recoveredBodySize);
+    }
+};
+
 std::string MixFile::BaseName(const std::string &pathname) const
 {
     const std::filesystem::path path = std::filesystem::u8path(pathname);
@@ -391,9 +469,11 @@ MixFile::MixFile(const std::string &gmd, Game game, const std::string &gmdCache)
       m_global_db(),
       m_local_db(game),
       m_has_lmd(false),
+      m_ignore_header(false),
       m_file_path()
 {
     std::fill(m_checksum, m_checksum + 20, 0);
+    m_reported_body_size = 0;
 
     const std::string cachePath = gmdCache.empty() ? "gmd.json" : gmdCache;
     if (!m_global_db.Load(gmd, cachePath, true))
@@ -408,11 +488,13 @@ MixFile::~MixFile()
 }
 
 bool MixFile::Open(const std::string &path, const bool writeAccess,
-                   const bool autoDetectGame)
+                   const bool autoDetectGame, const bool ignoreHeader)
 {
     m_file_path = path;
     m_has_lmd = false;
+    m_ignore_header = ignoreHeader;
     std::fill(m_checksum, m_checksum + 20, 0);
+    m_reported_body_size = 0;
 
     if (fh.is_open())
     {
@@ -444,6 +526,7 @@ bool MixFile::Open(const std::string &path, const bool writeAccess,
         Close();
         return false;
     }
+    m_reported_body_size = m_header.GetBodySize();
 
     if (fsize < static_cast<std::streamoff>(m_header.GetHeaderSize()))
     {
@@ -451,10 +534,17 @@ bool MixFile::Open(const std::string &path, const bool writeAccess,
         return false;
     }
 
-    const std::streamoff available_body = fsize - m_header.GetHeaderSize();
-    if (m_header.GetBodySize() >= available_body)
+    if (ignoreHeader)
     {
-        m_header.SetBodySize(static_cast<uint32_t>(available_body));
+        m_header.SetBodySize(MixFileEntrySupport::RecoverBodySize(m_header, fsize));
+    }
+    else
+    {
+        const uint32_t dataLimit = MixFileEntrySupport::DataLimit(m_header, fsize);
+        if (m_header.GetBodySize() > dataLimit)
+        {
+            m_header.SetBodySize(dataLimit);
+        }
     }
 
     if (m_header.GetHasChecksum())
@@ -542,7 +632,7 @@ bool MixFile::ExtractAll(const std::string &outPath)
             fname = m_global_db.GetName(m_header.GetGame(), it->first);
         }
 
-        if (it->second.size <= m_header.GetBodySize())
+        if (MixFileEntrySupport::IsReadable(it->second, m_header.GetBodySize()))
         {
             rv = ExtractFile(it->first, MixFileIo::JoinPath(outPath, fname)) && rv;
         }
@@ -558,7 +648,7 @@ bool MixFile::ExtractFile(int32_t id, const std::string &out)
     // find file index entry
     entry = m_header.GetEntry(id);
 
-    if (entry.size)
+    if (MixFileEntrySupport::IsReadable(entry, m_header.GetBodySize()))
     {
         std::vector<char> buffer(entry.size);
         fh.clear();
@@ -1136,7 +1226,24 @@ void MixFile::PrintInfo()
     std::println("  Body offset:        {} bytes", m_header.GetHeaderSize());
     std::println("  File count:         {}", m_header.GetFileCount());
     std::println("  Body size:          {} bytes", m_header.GetBodySize());
+    if (m_reported_body_size != 0 && m_reported_body_size != m_header.GetBodySize())
+    {
+        if (m_ignore_header)
+        {
+            std::println("  Stored body size:   {} bytes (ignored)",
+                         m_reported_body_size);
+        }
+        else
+        {
+            std::println("  Stored body size:   {} bytes (clamped)",
+                         m_reported_body_size);
+        }
+    }
     std::println("  Plain index size:   {} bytes", plainIndexSize);
+    if (m_ignore_header)
+    {
+        std::println("  Header trust:       disabled (--no-header)");
+    }
 
     if (isEncrypted)
     {

@@ -318,6 +318,7 @@ class HelpPrinter
         ShowEntry("-lmd[-], --lmd", "Archive local mix database toggle.");
         ShowEntry("-encrypt[-], --encrypt", "Archive encrypted-header toggle.");
         ShowEntry("-checksum[-], --checksum", "Archive checksum toggle.");
+        ShowEntry("--no-header", "Recover body size from the index for malformed archives.");
         ShowEntry("--extract / --create / --add", "Legacy archive mode switches.");
         ShowEntry("--remove / --list / --info", "More legacy archive mode switches.");
         ShowEntry("--mix FILE", "Legacy archive-path switch.");
@@ -345,6 +346,7 @@ class HelpPrinter
         std::println("");
         std::println("Guess Flags:");
         ShowEntry("--mix FILE", "Archive whose unknown IDs should be targeted.");
+        ShowEntry("--no-header", "Recover body size from the index before scanning unknown IDs.");
         ShowEntry("--id HEX", "Target a specific ID; repeatable.");
         ShowEntry("--ext EXT[,EXT...]", "Required extension list for candidate names.");
         ShowEntry("--charset CHARS", "Characters used for the bruteforced stem.");
@@ -449,7 +451,7 @@ class HelpPrinter
         std::println("Usage:");
         std::println("  {} --mix FILE [--game GAME] --ext EXT[,EXT...] [--min N] [--max N]",
                      programName);
-        std::println("      [--charset CHARS] [--prefix TEXT] [--suffix TEXT] [--force]",
+        std::println("      [--charset CHARS] [--prefix TEXT] [--suffix TEXT] [--no-header] [--force]",
                      programName);
         std::println("  {} --id HEX [--id HEX ...] [--game GAME] --ext EXT[,EXT...] [--min N] [--max N]",
                      programName);
@@ -464,6 +466,7 @@ class HelpPrinter
         std::println("Flags:");
         ShowEntry("-?, --help", "Show this help message and exit.");
         ShowEntry("--mix FILE", "Use unresolved IDs from an archive as targets.");
+        ShowEntry("--no-header", "Recover body size from the index for malformed archives.");
         ShowEntry("--id HEX", "Target a specific hexadecimal ID; repeatable.");
         ShowEntry("--game GAME", "Hashing mode: td, ra, ts, or ra2. Default: td.");
         ShowEntry("--ext EXT[,EXT...]", "Required extension list such as .shp,.ini.");
@@ -1563,7 +1566,7 @@ class GuessCommand final : public Command
             MixFile mixFile(
                 context.GlobalDbPath(), state.Options.GameType,
                 context.GmdCachePath());
-            if (!mixFile.Open(state.MixPath))
+            if (!mixFile.Open(state.MixPath, false, true, state.IgnoreHeader))
             {
                 std::println("Cannot open specified mix file");
                 return 1;
@@ -1627,6 +1630,7 @@ class GuessCommand final : public Command
         std::vector<int32_t> TargetIds;
         GuessBruteforcer::Options Options;
         bool Force = false;
+        bool IgnoreHeader = false;
         bool ShowedHelp = false;
     };
 
@@ -1658,6 +1662,11 @@ class GuessCommand final : public Command
                 {
                     return false;
                 }
+                continue;
+            }
+            if (token == "--no-header")
+            {
+                state.IgnoreHeader = true;
                 continue;
             }
             if (token == "--game")

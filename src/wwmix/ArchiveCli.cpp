@@ -37,6 +37,7 @@ enum class SwitchId
     LocalDb,
     Encrypt,
     Checksum,
+    NoHeader,
     Mix,
     LegacyExtract,
     LegacyCreate,
@@ -87,6 +88,7 @@ struct ArchiveCliOptions
     bool CreateLocalDb = false;
     bool EncryptHeader = false;
     bool AddChecksum = false;
+    bool IgnoreHeader = false;
     bool ShowedHelp = false;
 };
 
@@ -196,6 +198,7 @@ class ArchiveHelpPrinter
         ShowEntry("-lmd[-], --lmd", "Enable or disable local mix database creation.");
         ShowEntry("-encrypt[-], --encrypt", "Enable or disable header encryption.");
         ShowEntry("-checksum[-], --checksum", "Enable or disable checksum handling.");
+        ShowEntry("--no-header", "Recover body size from the index instead of trusting the header.");
         ShowEntry("--mix FILE", "Legacy archive-path switch.");
         ShowEntry("--directory DIR, --dir DIR", "Legacy named directory switch.");
         ShowEntry("--", "Stop switch parsing and treat the rest as operands.");
@@ -419,6 +422,8 @@ class ArchiveCommandParser
             {SwitchId::LocalDb, "lmd", SwitchArgument::None, true},
             {SwitchId::Encrypt, "encrypt", SwitchArgument::None, true},
             {SwitchId::Checksum, "checksum", SwitchArgument::None, true},
+            {SwitchId::NoHeader, "no-header", SwitchArgument::None, false},
+            {SwitchId::NoHeader, "noheader", SwitchArgument::None, false},
             {SwitchId::Mix, "mix", SwitchArgument::Required, false},
             {SwitchId::LegacyExtract, "extract", SwitchArgument::None, false},
             {SwitchId::LegacyCreate, "create", SwitchArgument::None, false},
@@ -624,6 +629,9 @@ class ArchiveCommandParser
             return true;
         case SwitchId::Checksum:
             options.AddChecksum = parsedSwitch.Enabled;
+            return true;
+        case SwitchId::NoHeader:
+            options.IgnoreHeader = true;
             return true;
         case SwitchId::Mix:
             options.ArchivePath = *parsedSwitch.Value;
@@ -854,7 +862,8 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified,
+                            options.IgnoreHeader))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -903,7 +912,8 @@ class ArchiveCommandRunner
     int RunAdd(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified))
+        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified,
+                            options.IgnoreHeader))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -934,7 +944,8 @@ class ArchiveCommandRunner
     int RunRemove(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified))
+        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified,
+                            options.IgnoreHeader))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -971,7 +982,8 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified,
+                            options.IgnoreHeader))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -990,7 +1002,8 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified,
+                            options.IgnoreHeader))
         {
             std::println("Cannot open specified mix file");
             return 1;

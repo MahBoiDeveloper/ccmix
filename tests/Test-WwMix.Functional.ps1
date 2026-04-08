@@ -103,6 +103,49 @@ try
     Assert-True (@($createdEntries | Where-Object { $_.Name -eq 'beta.ini' }).Count -eq 1) 'Created archive must contain beta.ini.'
     Assert-True (@($createdEntries | Where-Object { $_.Name -eq 'local mix database.dat' }).Count -eq 1) 'Created archive must contain the local mix database.'
 
+    Write-TestSection "No-Header Recovery"
+    $malformedMixPath = Join-Path -Path $artifactRoot -ChildPath 'sample-malformed.mix'
+    $malformedExtractDir = Join-Path -Path $artifactRoot -ChildPath 'extract-malformed'
+    $malformedRecoveredExtractDir = Join-Path -Path $artifactRoot -ChildPath 'extract-malformed-recovered'
+    Copy-Item -LiteralPath $createdMixPath -Destination $malformedMixPath -Force
+    New-Item -ItemType Directory -Force -Path $malformedExtractDir, $malformedRecoveredExtractDir | Out-Null
+
+    $malformedBytes = [System.IO.File]::ReadAllBytes($malformedMixPath)
+    [byte[]]$patchedBodySize = [BitConverter]::GetBytes([uint32]16)
+    [System.Array]::Copy($patchedBodySize, 0, $malformedBytes, 6, 4)
+    [System.IO.File]::WriteAllBytes($malformedMixPath, $malformedBytes)
+
+    $malformedInfo = Invoke-WwMix -WwMixPath $wwmixExe -Arguments @('i', $malformedMixPath) -Label 'info :: sample-malformed.mix'
+    Assert-ExitCodeZero -Result $malformedInfo
+    Assert-Match -Text $malformedInfo.Output -Pattern 'Body size:\s+16 bytes' -Message 'Malformed archive must expose the patched stored body size without recovery.'
+
+    $malformedExtract = Invoke-WwMix -WwMixPath $wwmixExe -Arguments @(
+        'x',
+        $malformedMixPath,
+        'alpha.txt',
+        "-o$malformedExtractDir"
+    ) -Label 'extract :: sample-malformed.mix without recovery'
+    Assert-True ($malformedExtract.ExitCode -ne 0) 'Malformed archive extraction without --no-header must fail.'
+
+    $recoveredInfo = Invoke-WwMix -WwMixPath $wwmixExe -Arguments @(
+        'i',
+        $malformedMixPath,
+        '--no-header'
+    ) -Label 'info :: sample-malformed.mix with recovery'
+    Assert-ExitCodeZero -Result $recoveredInfo
+    Assert-Match -Text $recoveredInfo.Output -Pattern 'Stored body size:\s+16 bytes \(ignored\)' -Message 'Recovered info must report the ignored stored body size.'
+    Assert-Match -Text $recoveredInfo.Output -Pattern 'Header trust:\s+disabled \(--no-header\)' -Message 'Recovered info must report that header trust is disabled.'
+
+    $recoveredExtract = Invoke-WwMix -WwMixPath $wwmixExe -Arguments @(
+        'x',
+        $malformedMixPath,
+        'alpha.txt',
+        '--no-header',
+        "-o$malformedRecoveredExtractDir"
+    ) -Label 'extract :: sample-malformed.mix with recovery'
+    Assert-ExitCodeZero -Result $recoveredExtract
+    Assert-FileTextEquals -ExpectedPath $alphaPath -ActualPath (Join-Path -Path $malformedRecoveredExtractDir -ChildPath 'alpha.txt') -Message '--no-header extraction must recover alpha.txt from the malformed archive.'
+
     $extractAllResult = Invoke-WwMix -WwMixPath $wwmixExe -Arguments @(
         'x',
         $createdMixPath,

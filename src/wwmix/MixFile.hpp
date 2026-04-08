@@ -40,10 +40,11 @@ class MixFile
     /// @param path Mix file path.
     /// @param writeAccess Open the archive with write access when modifications are needed.
     /// @param autoDetectGame Refine the game mode from archive contents when possible.
+    /// @param ignoreHeader Recover the body span from the index instead of trusting the stored body size.
     /// @retval true The file was opened.
     /// @retval false The file was not found.
     bool Open(const std::string &path, bool writeAccess = false,
-              bool autoDetectGame = true);
+              bool autoDetectGame = true, bool ignoreHeader = false);
     /// @brief Extract a file from the mix archive by CRC ID.
     /// @param fileID CRC ID of the file.
     /// @param outPath Extracted file path.
@@ -133,7 +134,9 @@ class MixFile
     MixLmd m_local_db;
     SkipMap m_skip;
     bool m_has_lmd;
+    bool m_ignore_header;
     std::string m_file_path;
     std::fstream fh; // file handler
     uint8_t m_checksum[20];
+    uint32_t m_reported_body_size;
 };
