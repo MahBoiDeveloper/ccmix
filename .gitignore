@@ -16,3 +16,4 @@ CPackSourceConfig.cmake
 *.spec
 *~
 src/config.h
+tests/.artifacts/
