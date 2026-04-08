@@ -1,70 +1,126 @@
-ccmix
-=====
+# ccmix
 
-Based on http://code.google.com/p/tsunmix/
+Command-line tools for reading, creating, and editing Westwood Studios `.mix` archives.
 
-Overview
-========
+`ccmix` started from the `tsunmix` codebase and has grown into a small toolkit for classic Command & Conquer archive workflows. The repository currently ships three executables:
 
-ccmix is a command line tool to create and extract from archive files in the Westwood Studios .mix format. The tool can create any of the 3 main varients used in classic Westwood games. These are Tiberian Dawn versions, Red Alert versions with both encrypted and unencrypted file headers and Tiberian Sun versions with encrypted and unencrypted file headers. It also optionally adds the XCC extension of including a local filenames database to allow recovery of filenames from the one way hash they are stored as.
+- `wwmix` - the unified front end for archive operations, global mix database editing, and encrypted-header key inspection
+- `ccmix` - the legacy archive-focused command-line tool
+- `gmdedit` - the small compatibility utility for batch-appending entries to `global mix database.dat`
 
-Usage
-======
+For new workflows, `wwmix` is the recommended entry point.
 
-Generally the usage is of the form ccmix --mode --mix /path/to/file.mix with various options available that alter the progams behaviour when creating or extracting files. The currently supported modes are as follows:
+## About
 
---extract
+This project is focused on the MIX archive formats used by classic Westwood games, especially the Tiberian Dawn, Red Alert, Tiberian Sun, and Red Alert 2 generations.
 
-This will extract a file or all files from a mix. Requires a --mix option.
+It can:
 
---create
+- list archive contents
+- extract files by name or ID
+- create new archives from directories
+- add or delete archive entries
+- write optional encrypted headers
+- write optional SHA-1 checksums
+- include or inspect XCC-style MIX database data
 
-This will create a mix file from the contents of a directory. Currently requires a minimum of the --dir and --mix options.
+The repository also includes the `wwmix gmd` and `wwmix key` workflows, which fold the older `gmdedit` and `mixkey` functionality into the newer unified executable.
 
---list
+## Building Manually
 
-This will list the contents of a mix file. Requires the --mix options.
+Clone the repository with submodules so the vendored Crypto++ dependency is available:
 
---add
+```powershell
+git clone --recursive <repository-url>
+cd ccmix
+```
 
-This will attempt to rebuild a mix file and add the requested file.
+### Recommended Windows Build
 
---delete
+The easiest way to build on Windows is the provided Visual Studio 2022 helper script:
 
-This will attempt to rebuild the mix file and remove the requested file.
+```powershell
+.\build_vs2022_msvc.bat Release x64
+```
 
-The following options can also be used.
+Build outputs are placed in `build\bin\Release`.
 
---file /path/to/file.name
+### Manual CMake Build
 
-Specifies a specific file to extract.
+If you want to drive the build yourself, use CMake directly:
 
---dir /path/to/dir
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+```
 
-Specifies a folder to extract to, or the contents of which to make a .mix from.
+## Requirements
 
---game
+- CMake 3.10 or newer
+- A C++23-capable compiler
+- Visual Studio 2022 with MSVC for the documented Windows workflow
+- Crypto++ available either through the vendored submodule in `libs/cryptopp` or your own external setup
 
-Can be td, ra, ts or ra2. Specifies which game the mix being operated on is for. td covers Sole Survivor as well as C&C and ra2 covers Yuri's Revenge. If not specified, ccmix defaults to td.
+## Main Project Features
 
---encrypt
+- `wwmix` provides a single executable for archive commands, GMD editing, and encrypted-header inspection.
+- `ccmix` remains available for the original switch-based archive workflow.
+- `gmdedit` remains available as a minimal compatibility tool for batch-appending entries to `global mix database.dat`.
+- MIX archives can be created with optional local mix databases, encrypted headers, and checksums where the format supports them.
+- The repository keeps a standalone `src/wwmix` implementation, so the unified tool is built independently from the older `ccmix` sources.
 
-Used when creating a file, encrypts the header with blowfish. Key is partly generated from rand(). Requires --game ra or later.
+## Quick Examples
 
---checksum
+List an archive:
 
-Used to include a SHA1 checksum, when set, the game will use this to verify the mix file contents and refuse to load if it doesn't match. Requires --game ra or later.
+```powershell
+wwmix mix l CONQUER.MIX
+```
 
---lmd
+Extract an archive into a folder:
 
-Specifies if a local mix database.dat file following the XCC format should be generated and included in the mix.
+```powershell
+wwmix mix x CONQUER.MIX -oout
+```
 
-Acknowledgements
-================
-ivosh-l author of tsunmix on which ccmix is based.
+Create a Red Alert 2 style archive with a local database and checksum:
 
-Olaf van der Spek for his work reverse engineering the C&C files formats and the tools he has developed over the years to allow modding these classic games.
+```powershell
+wwmix mix c custom.mix data -gra2 -lmd -checksum
+```
 
-Joe Bostic and CCHyper for pointing me at the reference source the header encryption is based upon.
+Append entries to a global mix database from a CSV-style additions file:
 
-The authors of the Crypto++ library ccmix now makes use of for handling the header encryption and SHA1 checksumming.
+```powershell
+wwmix gmd --input "global mix database.dat" --additions additions.csv --output updated.dat --game td
+```
+
+Inspect the encryption-related key data for a MIX file:
+
+```powershell
+wwmix key --mix CACHE.MIX --game ra
+```
+
+Legacy compatibility examples:
+
+```powershell
+ccmix --list --mix CONQUER.MIX
+gmdedit "global mix database.dat" additions.csv updated.dat
+```
+
+## Credits
+
+- `tsunmix` by ivosh-l for the original foundation this project was built on
+- `ccmix` by OmniBlade for updating `tsunmix`
+- Olaf van der Spek for years of Westwood file format reverse-engineering and XCC tooling
+- The Crypto++ authors for the cryptographic primitives used by the project
+
+## Legal
+
+This is an unofficial fan-made utility project. It is not affiliated with or endorsed by Electronic Arts, Westwood Studios, Petroglyph, or any other rights holder connected to Command & Conquer.
+
+Any game data, trademarks, archive contents, and related assets remain the property of their respective owners.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0. See [LICENSE.md](LICENSE.md) for the full text.
