@@ -39,9 +39,11 @@ class MixFile
     /// @brief Open a mix archive.
     /// @param path Mix file path.
     /// @param writeAccess Open the archive with write access when modifications are needed.
+    /// @param autoDetectGame Refine the game mode from archive contents when possible.
     /// @retval true The file was opened.
     /// @retval false The file was not found.
-    bool Open(const std::string &path, bool writeAccess = false);
+    bool Open(const std::string &path, bool writeAccess = false,
+              bool autoDetectGame = true);
     /// @brief Extract a file from the mix archive by CRC ID.
     /// @param fileID CRC ID of the file.
     /// @param outPath Extracted file path.

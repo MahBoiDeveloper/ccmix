@@ -5,6 +5,10 @@
 #include <string>
 #include <vector>
 
+#ifdef _WIN32
+#define main wmain
+#endif
+
 int main(int argc, wchar_t **argv)
 {
     std::vector<std::string> utf8Arguments;

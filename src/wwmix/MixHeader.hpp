@@ -19,6 +19,7 @@ struct IndexInfo
 typedef std::map<int32_t, IndexInfo> MixIndex;
 typedef std::pair<int32_t, IndexInfo> MixEntry;
 typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
+typedef std::map<int32_t, IndexInfo>::const_iterator MixIndexConstIterator;
 
 // Mix archive header.
 //
@@ -124,6 +125,12 @@ class MixHeader
     {
         return m_game_type;
     }
+
+    /// @brief Override the associated game format after header detection.
+    void SetGame(Game game)
+    {
+        m_game_type = game;
+    }
     //void printContents();
 
     /// @brief Return the serialized header size in bytes.
@@ -162,8 +169,20 @@ class MixHeader
         return m_index.begin();
     }
 
+    /// @brief Return a const iterator to the first index entry.
+    MixIndexConstIterator GetBegin() const
+    {
+        return m_index.begin();
+    }
+
     /// @brief Return an iterator past the last index entry.
     MixIndexIterator GetEnd()
+    {
+        return m_index.end();
+    }
+
+    /// @brief Return a const iterator past the last index entry.
+    MixIndexConstIterator GetEnd() const
     {
         return m_index.end();
     }

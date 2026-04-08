@@ -6,6 +6,8 @@
 
 #include "MixGameDb.hpp"
 
+#include <nlohmann/json_fwd.hpp>
+
 #include <vector>
 #include <fstream>
 #include <map>
@@ -22,6 +24,12 @@ class MixGmd
 
     /// @brief Write all game database sections to a stream.
     void WriteDb(std::fstream &fh);
+
+    /// @brief Load a full global mix database from an interchange JSON document.
+    bool ReadJson(const nlohmann::json &document);
+
+    /// @brief Serialize the full global mix database into an interchange JSON document.
+    nlohmann::json WriteJson() const;
 
     /// @brief Load a global mix database, reusing a JSON cache when possible.
     bool Load(const std::string &sourcePath, const std::string &cachePath,

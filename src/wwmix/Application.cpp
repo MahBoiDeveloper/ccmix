@@ -5,9 +5,12 @@
 #include "MixGmd.hpp"
 #include "MixHeader.hpp"
 #include "MixId.hpp"
+#include "MixLmd.hpp"
 
 #include "cryptopp/blowfish.h"
 #include "cryptopp/modes.h"
+
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <array>
@@ -159,6 +162,115 @@ class GameCodec
     }
 };
 
+class LmdGameCodec
+{
+  public:
+    static std::optional<Game> Parse(const std::string_view token)
+    {
+        switch (Match(token))
+        {
+        case Match("td"):
+            return Game::TD;
+        case Match("ra"):
+            return Game::RA;
+        case Match("ts"):
+            return Game::TS;
+        case Match("d2"):
+            return Game::D2;
+        case Match("d2k"):
+            return Game::D2K;
+        case Match("ra2"):
+            return Game::RA2;
+        default:
+            return std::nullopt;
+        }
+    }
+
+    static std::string_view Name(const Game game)
+    {
+        switch (game)
+        {
+        case Game::TD:
+            return "td";
+        case Game::RA:
+            return "ra";
+        case Game::TS:
+            return "ts";
+        case Game::D2:
+            return "d2";
+        case Game::D2K:
+            return "d2k";
+        case Game::RA2:
+            return "ra2";
+        default:
+            return "unknown";
+        }
+    }
+
+  private:
+    static constexpr uint32_t Match(const std::string_view value)
+    {
+        uint32_t key = static_cast<uint32_t>(value.size()) << 24;
+        for (std::size_t index = 0; index < value.size() && index < 3; ++index)
+        {
+            key |= static_cast<uint32_t>(
+                       static_cast<unsigned char>(value[index]))
+                   << (16 - index * 8);
+        }
+        return key;
+    }
+};
+
+class JsonDocumentIo
+{
+  public:
+    static std::optional<nlohmann::json> Read(const std::string &path)
+    {
+        std::ifstream file;
+        file.open(std::filesystem::u8path(path), std::ios::in);
+        if (!file.is_open())
+        {
+            std::println("Failed to open JSON file: {}", path);
+            return std::nullopt;
+        }
+
+        nlohmann::json document;
+        try
+        {
+            file >> document;
+        }
+        catch (const nlohmann::json::exception &exception)
+        {
+            std::println("Failed to parse JSON file {}: {}",
+                         path, exception.what());
+            return std::nullopt;
+        }
+
+        return document;
+    }
+
+    static bool Write(const std::string &path, const nlohmann::json &document)
+    {
+        std::ofstream file;
+        file.open(std::filesystem::u8path(path),
+                  std::ios::out | std::ios::trunc);
+        if (!file.is_open())
+        {
+            std::println("Failed to open JSON output file: {}", path);
+            return false;
+        }
+
+        file << document.dump(2);
+        if (!file.good())
+        {
+            std::println("Failed to write JSON output file: {}", path);
+            return false;
+        }
+
+        return true;
+    }
+};
+
 class HelpPrinter
 {
   public:
@@ -171,9 +283,14 @@ class HelpPrinter
                      programName);
         std::println("  {} gmd --input GMD --additions CSV --output GMD [--game GAME]",
                      programName);
+        std::println("  {} gmd --to-json --input GMD --output JSON", programName);
+        std::println("  {} gmd --to-bin --input JSON --output GMD", programName);
+        std::println("  {} lmd --to-json --input LMD --output JSON", programName);
+        std::println("  {} lmd --to-bin --input JSON --output LMD [--game GAME]",
+                     programName);
         std::println("  {} key --mix FILE [--game GAME]", programName);
         std::println("  {} guess --mix FILE [OPTIONS]", programName);
-        std::println("  {} help [mix|gmd|key|guess]", programName);
+        std::println("  {} help [mix|gmd|lmd|key|guess]", programName);
         std::println("");
         std::println("Archive commands:");
         ShowEntry("x, e, extract", "Extract archive contents.");
@@ -185,6 +302,7 @@ class HelpPrinter
         std::println("");
         std::println("Other commands:");
         ShowEntry("gmd", "Database editing workflow from gmdedit.");
+        ShowEntry("lmd", "Convert local mix databases between binary and JSON.");
         ShowEntry("key", "Encrypted-header key inspection from mixkey.");
         ShowEntry("guess", "Bruteforce candidate names for unknown MIX IDs.");
         ShowEntry("mix", "Compatibility wrapper for archive commands.");
@@ -207,10 +325,19 @@ class HelpPrinter
         ShowEntry("--", "Stop archive switch parsing.");
         std::println("");
         std::println("GMD Flags:");
-        ShowEntry("--input GMD", "Existing global mix database file.");
+        ShowEntry("--to-json", "Convert a binary GMD file into JSON.");
+        ShowEntry("--to-bin", "Convert a JSON GMD file into binary.");
+        ShowEntry("--input FILE", "Binary GMD file or JSON input file.");
         ShowEntry("--additions CSV", "Text file containing name,description pairs.");
-        ShowEntry("--output GMD", "Destination path for the updated database.");
+        ShowEntry("--output FILE", "Destination GMD or JSON path.");
         ShowEntry("--game GAME", "Game section to update: td, ra, ts, or ra2.");
+        std::println("");
+        std::println("LMD Flags:");
+        ShowEntry("--to-json", "Convert a binary LMD file into JSON.");
+        ShowEntry("--to-bin", "Convert a JSON LMD file into binary.");
+        ShowEntry("--input LMD", "Binary LMD file or JSON input file.");
+        ShowEntry("--output FILE", "Destination LMD or JSON path.");
+        ShowEntry("--game GAME", "Game hint or fallback: td, ra, ts, d2, d2k, or ra2.");
         std::println("");
         std::println("Key Flags:");
         ShowEntry("--mix FILE", "Encrypted MIX file to inspect.");
@@ -234,6 +361,7 @@ class HelpPrinter
         std::println("More Help:");
         std::println("  {} help mix", programName);
         std::println("  {} help gmd", programName);
+        std::println("  {} help lmd", programName);
         std::println("  {} help key", programName);
         std::println("  {} help guess", programName);
     }
@@ -241,7 +369,7 @@ class HelpPrinter
     static void ShowHelpUsage(const std::string_view programName)
     {
         std::println("Usage:");
-        std::println("  {} help [mix|gmd|key|guess]", programName);
+        std::println("  {} help [mix|gmd|lmd|key|guess]", programName);
     }
 
     static void ShowGmdUsage(const std::string_view programName)
@@ -250,6 +378,8 @@ class HelpPrinter
         std::println("  {} --input GMD --additions CSV --output GMD [--game GAME]",
                      programName);
         std::println("  {} INPUT_GMD ADDITIONS_CSV OUTPUT_GMD [GAME]", programName);
+        std::println("  {} --to-json --input GMD --output JSON", programName);
+        std::println("  {} --to-bin --input JSON --output GMD", programName);
     }
 
     static void ShowGmdHelp(const std::string_view programName)
@@ -260,10 +390,35 @@ class HelpPrinter
         std::println("");
         std::println("Flags:");
         ShowEntry("-?, --help", "Show this help message and exit.");
+        ShowEntry("--to-json", "Convert a binary global database into JSON.");
+        ShowEntry("--to-bin", "Convert a JSON global database into binary.");
         ShowEntry("--input GMD", "Existing global mix database file.");
         ShowEntry("--additions CSV", "Text file containing name,description pairs.");
-        ShowEntry("--output GMD", "Destination path for the updated database.");
+        ShowEntry("--output FILE", "Destination path for the updated database or JSON.");
         ShowEntry("--game GAME", "Game section to update: td, ra, ts, or ra2. Default: td.");
+    }
+
+    static void ShowLmdUsage(const std::string_view programName)
+    {
+        std::println("Usage:");
+        std::println("  {} --to-json --input LMD --output JSON", programName);
+        std::println("  {} --to-bin --input JSON --output LMD [--game GAME]",
+                     programName);
+    }
+
+    static void ShowLmdHelp(const std::string_view programName)
+    {
+        std::println("Local mix database converter");
+        std::println("");
+        ShowLmdUsage(programName);
+        std::println("");
+        std::println("Flags:");
+        ShowEntry("-?, --help", "Show this help message and exit.");
+        ShowEntry("--to-json", "Convert a binary local mix database into JSON.");
+        ShowEntry("--to-bin", "Convert a JSON local mix database into binary.");
+        ShowEntry("--input FILE", "Binary LMD file or JSON input file.");
+        ShowEntry("--output FILE", "Destination LMD or JSON path.");
+        ShowEntry("--game GAME", "Game hint or fallback: td, ra, ts, d2, d2k, or ra2.");
     }
 
     static void ShowKeyUsage(const std::string_view programName)
@@ -364,47 +519,17 @@ class GmdCommand final : public Command
             return state.ShowedHelp ? 0 : 1;
         }
 
-        MixGmd gmd;
-        if (!gmd.Load(state.InputPath, context.GmdCachePath(), false))
+        switch (state.Operation)
         {
-            std::println("Failed to open global mix database: {}", state.InputPath);
+        case Mode::Edit:
+            return RunEdit(context, state);
+        case Mode::ToJson:
+            return ConvertBinaryToJson(state);
+        case Mode::ToBin:
+            return ConvertJsonToBinary(context, state);
+        default:
             return 1;
         }
-
-        const std::optional<NamePairs> additions = ReadAdditions(state.AdditionsPath);
-        if (!additions.has_value())
-        {
-            return 1;
-        }
-
-        for (const auto &entry : *additions)
-        {
-            std::println("{} - {}", entry.first, entry.second);
-            if (!gmd.AddName(state.GameType, entry.first, entry.second))
-            {
-                std::println("Failed to add entry: {}", entry.first);
-                return 1;
-            }
-        }
-
-        std::fstream outputFile;
-        outputFile.open(
-            std::filesystem::u8path(state.OutputPath),
-            std::ios_base::out | std::ios_base::binary);
-        if (!outputFile.is_open())
-        {
-            std::println("Failed to open output file: {}", state.OutputPath);
-            return 1;
-        }
-
-        gmd.WriteDb(outputFile);
-        outputFile.close();
-        gmd.WriteCache(state.OutputPath, context.GmdCachePath());
-
-        std::println("Wrote {} entries into the {} section of {}.",
-                     additions->size(), GameCodec::Name(state.GameType),
-                     state.OutputPath);
-        return 0;
     }
 
     void ShowHelp(const ApplicationContext &context) const override
@@ -415,6 +540,13 @@ class GmdCommand final : public Command
   private:
     using NamePairs = std::vector<std::pair<std::string, std::string>>;
 
+    enum class Mode
+    {
+        Edit,
+        ToJson,
+        ToBin
+    };
+
     struct State
     {
         std::string DisplayName;
@@ -422,6 +554,8 @@ class GmdCommand final : public Command
         std::string AdditionsPath;
         std::string OutputPath;
         Game GameType = Game::TD;
+        Mode Operation = Mode::Edit;
+        bool GameSpecified = false;
         bool ShowedHelp = false;
     };
 
@@ -450,6 +584,22 @@ class GmdCommand final : public Command
                 HelpPrinter::ShowGmdHelp(displayName);
                 state.ShowedHelp = true;
                 return false;
+            }
+            if (token == "--to-json")
+            {
+                if (!TrySetMode(state, Mode::ToJson))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--to-bin")
+            {
+                if (!TrySetMode(state, Mode::ToBin))
+                {
+                    return false;
+                }
+                continue;
             }
             if (token == "--input")
             {
@@ -494,6 +644,7 @@ class GmdCommand final : public Command
                     return false;
                 }
                 state.GameType = *game;
+                state.GameSpecified = true;
                 continue;
             }
 
@@ -502,11 +653,33 @@ class GmdCommand final : public Command
             return false;
         }
 
-        if (state.InputPath.empty() || state.AdditionsPath.empty() ||
-            state.OutputPath.empty())
+        if (state.Operation == Mode::Edit)
         {
-            std::println("You must specify input, additions, and output paths.");
+            if (state.InputPath.empty() || state.AdditionsPath.empty() ||
+                state.OutputPath.empty())
+            {
+                std::println("You must specify input, additions, and output paths.");
+                HelpPrinter::ShowGmdUsage(displayName);
+                return false;
+            }
+
+            return true;
+        }
+
+        if (state.InputPath.empty() || state.OutputPath.empty())
+        {
+            std::println("You must specify input and output paths.");
             HelpPrinter::ShowGmdUsage(displayName);
+            return false;
+        }
+        if (!state.AdditionsPath.empty())
+        {
+            std::println("--additions is only valid for the database editing workflow.");
+            return false;
+        }
+        if (state.GameSpecified)
+        {
+            std::println("--game is only valid for the database editing workflow.");
             return false;
         }
 
@@ -545,6 +718,18 @@ class GmdCommand final : public Command
         return true;
     }
 
+    static bool TrySetMode(State &state, const Mode mode)
+    {
+        if (state.Operation != Mode::Edit && state.Operation != mode)
+        {
+            std::println("Choose either --to-json or --to-bin, not both.");
+            return false;
+        }
+
+        state.Operation = mode;
+        return true;
+    }
+
     static bool TryReadNamedValue(const std::span<char *> arguments, int &index,
                                   const std::string_view optionName,
                                   const std::string_view valueDescription,
@@ -559,6 +744,112 @@ class GmdCommand final : public Command
 
         value = arguments[++index];
         return true;
+    }
+
+    static int RunEdit(const ApplicationContext &context, const State &state)
+    {
+        MixGmd gmd;
+        if (!gmd.Load(state.InputPath, context.GmdCachePath(), false))
+        {
+            std::println("Failed to open global mix database: {}", state.InputPath);
+            return 1;
+        }
+
+        const std::optional<NamePairs> additions = ReadAdditions(state.AdditionsPath);
+        if (!additions.has_value())
+        {
+            return 1;
+        }
+
+        for (const auto &entry : *additions)
+        {
+            std::println("{} - {}", entry.first, entry.second);
+            if (!gmd.AddName(state.GameType, entry.first, entry.second))
+            {
+                std::println("Failed to add entry: {}", entry.first);
+                return 1;
+            }
+        }
+
+        std::fstream outputFile;
+        outputFile.open(
+            std::filesystem::u8path(state.OutputPath),
+            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+        if (!outputFile.is_open())
+        {
+            std::println("Failed to open output file: {}", state.OutputPath);
+            return 1;
+        }
+
+        gmd.WriteDb(outputFile);
+        outputFile.close();
+        gmd.WriteCache(state.OutputPath, context.GmdCachePath());
+
+        std::println("Wrote {} entries into the {} section of {}.",
+                     additions->size(), GameCodec::Name(state.GameType),
+                     state.OutputPath);
+        return 0;
+    }
+
+    static int ConvertBinaryToJson(const State &state)
+    {
+        std::fstream inputFile;
+        inputFile.open(
+            std::filesystem::u8path(state.InputPath),
+            std::ios_base::in | std::ios_base::binary);
+        if (!inputFile.is_open())
+        {
+            std::println("Failed to open binary GMD file: {}", state.InputPath);
+            return 1;
+        }
+
+        MixGmd gmd;
+        gmd.ReadDb(inputFile);
+        if (!JsonDocumentIo::Write(state.OutputPath, gmd.WriteJson()))
+        {
+            return 1;
+        }
+
+        std::println("Converted binary GMD {} to JSON {}.",
+                     state.InputPath, state.OutputPath);
+        return 0;
+    }
+
+    static int ConvertJsonToBinary(const ApplicationContext &context,
+                                   const State &state)
+    {
+        const std::optional<nlohmann::json> document =
+            JsonDocumentIo::Read(state.InputPath);
+        if (!document.has_value())
+        {
+            return 1;
+        }
+
+        MixGmd gmd;
+        if (!gmd.ReadJson(*document))
+        {
+            std::println("Failed to load GMD JSON document: {}", state.InputPath);
+            return 1;
+        }
+
+        std::fstream outputFile;
+        outputFile.open(
+            std::filesystem::u8path(state.OutputPath),
+            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+        if (!outputFile.is_open())
+        {
+            std::println("Failed to open binary GMD output file: {}",
+                         state.OutputPath);
+            return 1;
+        }
+
+        gmd.WriteDb(outputFile);
+        outputFile.close();
+        gmd.WriteCache(state.OutputPath, context.GmdCachePath());
+
+        std::println("Converted JSON GMD {} to binary {}.",
+                     state.InputPath, state.OutputPath);
+        return 0;
     }
 
     static std::optional<NamePairs> ReadAdditions(const std::string &path)
@@ -598,6 +889,278 @@ class GmdCommand final : public Command
         }
 
         return names;
+    }
+};
+
+class LmdCommand final : public Command
+{
+  public:
+    std::string_view CanonicalName() const override
+    {
+        return "lmd";
+    }
+
+    bool Matches(const std::string_view token) const override
+    {
+        return token == CanonicalName();
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        State state;
+        const std::span<char *> commandArguments =
+            arguments.size() > 1 ? arguments.subspan(1) : std::span<char *>();
+        if (!Parse(context.DisplayName(CanonicalName()), commandArguments, state))
+        {
+            return state.ShowedHelp ? 0 : 1;
+        }
+
+        switch (state.Operation)
+        {
+        case Mode::ToJson:
+            return ConvertBinaryToJson(state);
+        case Mode::ToBin:
+            return ConvertJsonToBinary(state);
+        default:
+            return 1;
+        }
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        HelpPrinter::ShowLmdHelp(context.DisplayName(CanonicalName()));
+    }
+
+  private:
+    enum class Mode
+    {
+        None,
+        ToJson,
+        ToBin
+    };
+
+    struct State
+    {
+        std::string DisplayName;
+        std::string InputPath;
+        std::string OutputPath;
+        std::optional<Game> GameType;
+        Mode Operation = Mode::None;
+        bool ShowedHelp = false;
+    };
+
+    static bool Parse(const std::string &displayName,
+                      const std::span<char *> arguments, State &state)
+    {
+        state.DisplayName = displayName;
+
+        if (arguments.empty())
+        {
+            HelpPrinter::ShowLmdUsage(displayName);
+            state.ShowedHelp = true;
+            return false;
+        }
+
+        for (int index = 0; index < static_cast<int>(arguments.size()); ++index)
+        {
+            const std::string_view token(arguments[index]);
+            if (token == "-?" || token == "--help")
+            {
+                HelpPrinter::ShowLmdHelp(displayName);
+                state.ShowedHelp = true;
+                return false;
+            }
+            if (token == "--to-json")
+            {
+                if (!TrySetMode(state, Mode::ToJson))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--to-bin")
+            {
+                if (!TrySetMode(state, Mode::ToBin))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--input")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "an input path",
+                                       state.InputPath))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--output")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "an output path",
+                                       state.OutputPath))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--game")
+            {
+                std::string gameName;
+                if (!TryReadNamedValue(arguments, index, token, "a game name",
+                                       gameName))
+                {
+                    return false;
+                }
+
+                const std::optional<Game> game = LmdGameCodec::Parse(gameName);
+                if (!game.has_value())
+                {
+                    std::println("--game is either td, ra, ts, d2, d2k or ra2.");
+                    return false;
+                }
+                state.GameType = *game;
+                continue;
+            }
+
+            std::println("Invalid argument: {}", token);
+            HelpPrinter::ShowLmdUsage(displayName);
+            return false;
+        }
+
+        if (state.Operation == Mode::None)
+        {
+            std::println("You must choose either --to-json or --to-bin.");
+            HelpPrinter::ShowLmdUsage(displayName);
+            return false;
+        }
+        if (state.InputPath.empty() || state.OutputPath.empty())
+        {
+            std::println("You must specify input and output paths.");
+            HelpPrinter::ShowLmdUsage(displayName);
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool TrySetMode(State &state, const Mode mode)
+    {
+        if (state.Operation != Mode::None && state.Operation != mode)
+        {
+            std::println("Choose either --to-json or --to-bin, not both.");
+            return false;
+        }
+
+        state.Operation = mode;
+        return true;
+    }
+
+    static bool TryReadNamedValue(const std::span<char *> arguments, int &index,
+                                  const std::string_view optionName,
+                                  const std::string_view valueDescription,
+                                  std::string &value)
+    {
+        if (index + 1 >= static_cast<int>(arguments.size()) ||
+            ArchiveCli::IsSwitchToken(arguments[index + 1]))
+        {
+            std::println("{} requires {}.", optionName, valueDescription);
+            return false;
+        }
+
+        value = arguments[++index];
+        return true;
+    }
+
+    static std::optional<uint32_t> ReadBinarySize(const std::string &path)
+    {
+        std::error_code error;
+        const std::uintmax_t size =
+            std::filesystem::file_size(std::filesystem::u8path(path), error);
+        if (error)
+        {
+            std::println("Failed to read binary file size: {}", path);
+            return std::nullopt;
+        }
+        if (size > std::numeric_limits<uint32_t>::max())
+        {
+            std::println("Binary file exceeds the 32-bit LMD size limit: {}",
+                         path);
+            return std::nullopt;
+        }
+
+        return static_cast<uint32_t>(size);
+    }
+
+    static int ConvertBinaryToJson(const State &state)
+    {
+        const std::optional<uint32_t> size = ReadBinarySize(state.InputPath);
+        if (!size.has_value())
+        {
+            return 1;
+        }
+
+        std::fstream inputFile;
+        inputFile.open(
+            std::filesystem::u8path(state.InputPath),
+            std::ios_base::in | std::ios_base::binary);
+        if (!inputFile.is_open())
+        {
+            std::println("Failed to open binary LMD file: {}", state.InputPath);
+            return 1;
+        }
+
+        MixLmd lmd(state.GameType.value_or(Game::TD));
+        if (!lmd.ReadDb(inputFile, 0, *size))
+        {
+            std::println("Failed to load binary LMD file: {}", state.InputPath);
+            return 1;
+        }
+        if (!JsonDocumentIo::Write(state.OutputPath, lmd.WriteJson()))
+        {
+            return 1;
+        }
+
+        std::println("Converted binary LMD {} to JSON {} for game {}.",
+                     state.InputPath, state.OutputPath,
+                     LmdGameCodec::Name(lmd.GetGame()));
+        return 0;
+    }
+
+    static int ConvertJsonToBinary(const State &state)
+    {
+        const std::optional<nlohmann::json> document =
+            JsonDocumentIo::Read(state.InputPath);
+        if (!document.has_value())
+        {
+            return 1;
+        }
+
+        MixLmd lmd(state.GameType.value_or(Game::TD));
+        if (!lmd.ReadJson(*document))
+        {
+            std::println("Failed to load LMD JSON document: {}", state.InputPath);
+            return 1;
+        }
+
+        std::fstream outputFile;
+        outputFile.open(
+            std::filesystem::u8path(state.OutputPath),
+            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+        if (!outputFile.is_open())
+        {
+            std::println("Failed to open binary LMD output file: {}",
+                         state.OutputPath);
+            return 1;
+        }
+
+        lmd.WriteDb(outputFile);
+        outputFile.close();
+        std::println("Converted JSON LMD {} to binary {} for game {}.",
+                     state.InputPath, state.OutputPath,
+                     LmdGameCodec::Name(lmd.GetGame()));
+        return 0;
     }
 };
 
@@ -1456,6 +2019,7 @@ CommandCatalog::CommandCatalog()
     Add<HelpCommand>();
     Add<MixCommand>();
     Add<GmdCommand>();
+    Add<LmdCommand>();
     Add<KeyCommand>();
     Add<GuessCommand>();
     Add<ArchiveRootCommand>();

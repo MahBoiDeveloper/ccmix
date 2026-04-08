@@ -120,6 +120,66 @@ void MixGmd::WriteDb(std::fstream &fh)
     }
 }
 
+bool MixGmd::ReadJson(const nlohmann::json &document)
+{
+    if (!document.is_object())
+    {
+        return false;
+    }
+    if (document.contains("type") &&
+        (!document.at("type").is_string() ||
+         document.at("type").get<std::string>() != "gmd"))
+    {
+        return false;
+    }
+    if (!document.contains("games") || !document.at("games").is_object())
+    {
+        return false;
+    }
+
+    const nlohmann::json &games = document.at("games");
+    if (!games.contains("td") ||
+        !games.contains("ra") ||
+        !games.contains("ts") ||
+        !games.contains("ra2"))
+    {
+        return false;
+    }
+
+    MixGameDb td(Game::TD);
+    MixGameDb ra(Game::RA);
+    MixGameDb ts(Game::TS);
+    MixGameDb ra2(Game::RA2);
+
+    if (!td.ReadJson(games.at("td")) ||
+        !ra.ReadJson(games.at("ra")) ||
+        !ts.ReadJson(games.at("ts")) ||
+        !ra2.ReadJson(games.at("ra2")))
+    {
+        return false;
+    }
+
+    m_td_list = std::move(td);
+    m_ra_list = std::move(ra);
+    m_ts_list = std::move(ts);
+    m_ra2_list = std::move(ra2);
+    return true;
+}
+
+nlohmann::json MixGmd::WriteJson() const
+{
+    return {
+        {"type", "gmd"},
+        {"games",
+         {
+             {"td", m_td_list.WriteJson()},
+             {"ra", m_ra_list.WriteJson()},
+             {"ts", m_ts_list.WriteJson()},
+             {"ra2", m_ra2_list.WriteJson()}
+         }}
+    };
+}
+
 bool MixGmd::Load(const std::string &sourcePath, const std::string &cachePath,
                   const bool allowStaleCache)
 {
@@ -156,6 +216,7 @@ bool MixGmd::WriteCache(const std::string &sourcePath,
         return false;
     }
 
+    const nlohmann::json exportDocument = WriteJson();
     nlohmann::json cacheDocument =
     {
         {"version", GmdCacheVersion},
@@ -165,13 +226,7 @@ bool MixGmd::WriteCache(const std::string &sourcePath,
              {"size", static_cast<uint64_t>(sourceInfo.size)},
              {"modified", sourceInfo.modified}
          }},
-        {"games",
-         {
-             {"td", m_td_list.WriteJson()},
-             {"ra", m_ra_list.WriteJson()},
-             {"ts", m_ts_list.WriteJson()},
-             {"ra2", m_ra2_list.WriteJson()}
-         }}
+        {"games", exportDocument.at("games")}
     };
 
     std::ofstream cacheFile;
@@ -238,32 +293,7 @@ bool MixGmd::ReadCache(const std::string &sourcePath,
         }
     }
 
-    if (!cacheDocument.at("games").contains("td") ||
-        !cacheDocument.at("games").contains("ra") ||
-        !cacheDocument.at("games").contains("ts") ||
-        !cacheDocument.at("games").contains("ra2"))
-    {
-        return false;
-    }
-
-    MixGameDb td(Game::TD);
-    MixGameDb ra(Game::RA);
-    MixGameDb ts(Game::TS);
-    MixGameDb ra2(Game::RA2);
-
-    if (!td.ReadJson(cacheDocument.at("games").at("td")) ||
-        !ra.ReadJson(cacheDocument.at("games").at("ra")) ||
-        !ts.ReadJson(cacheDocument.at("games").at("ts")) ||
-        !ra2.ReadJson(cacheDocument.at("games").at("ra2")))
-    {
-        return false;
-    }
-
-    m_td_list = std::move(td);
-    m_ra_list = std::move(ra);
-    m_ts_list = std::move(ts);
-    m_ra2_list = std::move(ra2);
-    return true;
+    return ReadJson(cacheDocument);
 }
 
 std::string MixGmd::GetName(Game game, int32_t id) const

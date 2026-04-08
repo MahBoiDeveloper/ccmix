@@ -83,6 +83,7 @@ struct ArchiveCliOptions
     std::string Directory;
     uint32_t FileId = 0;
     Game GameType = Game::TD;
+    bool GameSpecified = false;
     bool CreateLocalDb = false;
     bool EncryptHeader = false;
     bool AddChecksum = false;
@@ -597,6 +598,7 @@ class ArchiveCommandParser
                 return false;
             }
             options.GameType = *game;
+            options.GameSpecified = true;
             return true;
         }
         case SwitchId::Output:
@@ -852,7 +854,7 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -901,7 +903,7 @@ class ArchiveCommandRunner
     int RunAdd(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, true))
+        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -932,7 +934,7 @@ class ArchiveCommandRunner
     int RunRemove(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath, true))
+        if (!inputFile.Open(options.ArchivePath, true, !options.GameSpecified))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -969,7 +971,7 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -988,7 +990,7 @@ class ArchiveCommandRunner
         }
 
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath))
+        if (!inputFile.Open(options.ArchivePath, false, !options.GameSpecified))
         {
             std::println("Cannot open specified mix file");
             return 1;

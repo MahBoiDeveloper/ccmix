@@ -4,8 +4,10 @@
 #include "cryptopp/integer.h"
 #include <cstdio>
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <limits>
+#include <optional>
 #include <print>
 
 using CryptoPP::SHA1;
@@ -203,6 +205,105 @@ class MixFileInfoSupport
     }
 };
 
+class MixFileGameResolver
+{
+  public:
+    static constexpr std::array<Game, 4> ArchiveGames =
+    {
+        Game::TD,
+        Game::RA,
+        Game::TS,
+        Game::RA2
+    };
+
+    static bool HeaderUsesExtendedLayout(std::istream &stream)
+    {
+        stream.clear();
+        stream.seekg(0, std::ios::beg);
+
+        char headerPrefix[2] = {0};
+        stream.read(headerPrefix, 2);
+        const bool hasPrefix = stream.gcount() == 2;
+
+        stream.clear();
+        stream.seekg(0, std::ios::beg);
+        return hasPrefix && headerPrefix[0] == 0 && headerPrefix[1] == 0;
+    }
+
+    static std::vector<Game> CandidateGames(const Game preferredGame,
+                                            const bool extendedLayout)
+    {
+        std::vector<Game> games;
+        games.reserve(ArchiveGames.size());
+        AppendUnique(games, preferredGame);
+
+        if (extendedLayout)
+        {
+            AppendUnique(games, Game::RA2);
+            AppendUnique(games, Game::TS);
+            AppendUnique(games, Game::RA);
+            AppendUnique(games, Game::TD);
+        }
+        else
+        {
+            AppendUnique(games, Game::TD);
+            AppendUnique(games, Game::RA);
+            AppendUnique(games, Game::TS);
+            AppendUnique(games, Game::RA2);
+        }
+
+        return games;
+    }
+
+    static std::optional<MixLmd> TryLoadLocalDb(std::fstream &stream,
+                                                const MixHeader &header,
+                                                const Game game)
+    {
+        MixLmd lmd(game);
+        const IndexInfo entry =
+            header.GetEntry(MixId::IdGen(game, lmd.GetDbName()));
+        if (entry.size < 52 || entry.size > header.GetBodySize())
+        {
+            return std::nullopt;
+        }
+
+        if (!lmd.ReadDb(stream, entry.offset + header.GetHeaderSize(), entry.size))
+        {
+            return std::nullopt;
+        }
+
+        return lmd;
+    }
+
+    static std::size_t CountKnownGlobalNames(const MixHeader &header,
+                                             const MixGmd &globalDb,
+                                             const Game game)
+    {
+        std::size_t count = 0;
+        for (MixIndex::const_iterator it = header.GetBegin();
+             it != header.GetEnd();
+             ++it)
+        {
+            const std::string name = globalDb.GetName(game, it->first);
+            if (name.rfind("[id]", 0) != 0)
+            {
+                ++count;
+            }
+        }
+
+        return count;
+    }
+
+  private:
+    static void AppendUnique(std::vector<Game> &games, const Game game)
+    {
+        if (std::find(games.begin(), games.end(), game) == games.end())
+        {
+            games.push_back(game);
+        }
+    }
+};
+
 std::string MixFile::BaseName(const std::string &pathname) const
 {
     const std::filesystem::path path = std::filesystem::u8path(pathname);
@@ -231,9 +332,9 @@ MixFile::~MixFile()
     Close();
 }
 
-bool MixFile::Open(const std::string &path, const bool writeAccess)
+bool MixFile::Open(const std::string &path, const bool writeAccess,
+                   const bool autoDetectGame)
 {
-    IndexInfo lmd;
     m_file_path = path;
     m_has_lmd = false;
     std::fill(m_checksum, m_checksum + 20, 0);
@@ -251,6 +352,14 @@ bool MixFile::Open(const std::string &path, const bool writeAccess)
     {
         std::println("File {} failed to open", path);
         return false;
+    }
+
+    if (autoDetectGame &&
+        MixFileGameResolver::HeaderUsesExtendedLayout(fh) &&
+        m_header.GetGame() == Game::TD)
+    {
+        m_header.SetGame(Game::RA2);
+        m_local_db = MixLmd(Game::RA2);
     }
 
     const std::streamoff fsize = MixFileIo::GetStreamSize(fh);
@@ -279,12 +388,58 @@ bool MixFile::Open(const std::string &path, const bool writeAccess)
         fh.read(reinterpret_cast<char *>(m_checksum), 20);
     }
 
-    //check if we have a local mix db and if its sane-ish
-    lmd = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()));
-    if (lmd.size >= 52 && lmd.size < m_header.GetBodySize())
+    if (autoDetectGame)
     {
-        m_local_db.ReadDb(fh, lmd.offset + m_header.GetHeaderSize(), lmd.size);
-        m_has_lmd = true;
+        const bool extendedLayout =
+            m_header.GetHeaderSize() !=
+            6u + static_cast<uint32_t>(m_header.GetFileCount()) * 12u;
+        const std::vector<Game> candidates =
+            MixFileGameResolver::CandidateGames(m_header.GetGame(),
+                                                extendedLayout);
+
+        for (const Game candidate : candidates)
+        {
+            const std::optional<MixLmd> lmd =
+                MixFileGameResolver::TryLoadLocalDb(fh, m_header, candidate);
+            if (!lmd.has_value())
+            {
+                continue;
+            }
+
+            m_header.SetGame(lmd->GetGame());
+            m_local_db = *lmd;
+            m_has_lmd = true;
+            return true;
+        }
+
+        Game bestGame = m_header.GetGame();
+        std::size_t bestScore =
+            MixFileGameResolver::CountKnownGlobalNames(m_header, m_global_db,
+                                                       bestGame);
+        for (const Game candidate : candidates)
+        {
+            const std::size_t candidateScore =
+                MixFileGameResolver::CountKnownGlobalNames(m_header, m_global_db,
+                                                           candidate);
+            if (candidateScore > bestScore)
+            {
+                bestGame = candidate;
+                bestScore = candidateScore;
+            }
+        }
+
+        m_header.SetGame(bestGame);
+        m_local_db = MixLmd(bestGame);
+    }
+    else
+    {
+        const std::optional<MixLmd> lmd =
+            MixFileGameResolver::TryLoadLocalDb(fh, m_header, m_header.GetGame());
+        if (lmd.has_value())
+        {
+            m_local_db = *lmd;
+            m_has_lmd = true;
+        }
     }
 
     return true;

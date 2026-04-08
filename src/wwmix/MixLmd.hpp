@@ -7,6 +7,8 @@
 #include "MixNumeric.hpp"
 #include "MixId.hpp"
 
+#include <nlohmann/json_fwd.hpp>
+
 #include <cstddef>
 #include <fstream>
 #include <map>
@@ -18,10 +20,16 @@ class MixLmd
     MixLmd(Game game);
 
     /// @brief Load the local mix database from an archive region.
-    void ReadDb(std::fstream &fh, uint32_t offset, uint32_t size);
+    bool ReadDb(std::fstream &fh, uint32_t offset, uint32_t size);
 
     /// @brief Write the local mix database to a stream.
     void WriteDb(std::fstream &fh);
+
+    /// @brief Load the local mix database from an interchange JSON document.
+    bool ReadJson(const nlohmann::json &document);
+
+    /// @brief Serialize the local mix database into an interchange JSON document.
+    nlohmann::json WriteJson() const;
 
     /// @brief Resolve a file ID to a stored local name.
     std::string GetName(int32_t id) const;
@@ -57,6 +65,9 @@ class MixLmd
     typedef std::map<int32_t, std::string> IdMap;
     typedef std::pair<int32_t, std::string> IdPair;
     typedef std::map<int32_t, std::string>::const_iterator IdIterator;
+
+    void Reset(Game game);
+
     static const char m_xcc_id[32];
     IdMap m_name_map;
     std::size_t m_size;
