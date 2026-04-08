@@ -11,6 +11,7 @@
 #include <array>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <optional>
 #include <print>
 #include <span>
@@ -21,6 +22,53 @@
 
 namespace WwMix
 {
+class CommandCatalog;
+
+struct ApplicationContext
+{
+    std::string ProgramPath;
+    std::string ProgramName;
+    const CommandCatalog *Commands = nullptr;
+
+    std::string DisplayName(const std::string_view commandName) const
+    {
+        if (commandName.empty())
+        {
+            return ProgramName;
+        }
+
+        return ProgramName + " " + std::string(commandName);
+    }
+};
+
+class Command
+{
+  public:
+    virtual ~Command() = default;
+    virtual std::string_view CanonicalName() const = 0;
+    virtual bool Matches(std::string_view token) const = 0;
+    virtual int Run(const ApplicationContext &context,
+                    std::span<char *> arguments) const = 0;
+    virtual void ShowHelp(const ApplicationContext &context) const = 0;
+};
+
+class CommandCatalog
+{
+  public:
+    CommandCatalog();
+    const Command *Find(std::string_view token) const;
+
+  private:
+    template <typename T, typename... Args>
+    void Add(Args &&...args)
+    {
+        m_commands.push_back(
+            std::make_unique<T>(std::forward<Args>(args)...));
+    }
+
+    std::vector<std::unique_ptr<Command>> m_commands;
+};
+
 class GameCodec
 {
   public:
@@ -106,6 +154,12 @@ class HelpPrinter
         std::println("  {} --list --mix CONQUER.MIX", programName);
     }
 
+    static void ShowHelpUsage(const std::string_view programName)
+    {
+        std::println("Usage:");
+        std::println("  {} help [mix|gmd|key]", programName);
+    }
+
     static void ShowGmdUsage(const std::string_view programName)
     {
         std::println("Usage:");
@@ -159,33 +213,43 @@ class HelpPrinter
     }
 };
 
-class GmdCommand
+class GmdCommand final : public Command
 {
   public:
-    explicit GmdCommand(std::string_view displayName)
-        : m_displayName(displayName)
+    std::string_view CanonicalName() const override
     {
+        return "gmd";
     }
 
-    int Run(const std::span<char *> arguments)
+    bool Matches(const std::string_view token) const override
     {
-        if (!Parse(arguments))
+        return token == "gmd" || token == "gmdedit";
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        State state;
+        const std::span<char *> commandArguments =
+            arguments.size() > 1 ? arguments.subspan(1) : std::span<char *>();
+        if (!Parse(context.DisplayName(CanonicalName()), commandArguments, state))
         {
-            return m_showedHelp ? 0 : 1;
+            return state.ShowedHelp ? 0 : 1;
         }
 
         MixGmd gmd;
-        std::fstream inputFile(m_inputPath, std::ios_base::in | std::ios_base::binary);
+        std::fstream inputFile(
+            state.InputPath, std::ios_base::in | std::ios_base::binary);
         if (!inputFile.is_open())
         {
-            std::println("Failed to open global mix database: {}", m_inputPath);
+            std::println("Failed to open global mix database: {}", state.InputPath);
             return 1;
         }
 
         gmd.ReadDb(inputFile);
         inputFile.close();
 
-        const std::optional<NamePairs> additions = ReadAdditions(m_additionsPath);
+        const std::optional<NamePairs> additions = ReadAdditions(state.AdditionsPath);
         if (!additions.has_value())
         {
             return 1;
@@ -194,17 +258,18 @@ class GmdCommand
         for (const auto &entry : *additions)
         {
             std::println("{} - {}", entry.first, entry.second);
-            if (!gmd.AddName(m_gameType, entry.first, entry.second))
+            if (!gmd.AddName(state.GameType, entry.first, entry.second))
             {
                 std::println("Failed to add entry: {}", entry.first);
                 return 1;
             }
         }
 
-        std::fstream outputFile(m_outputPath, std::ios_base::out | std::ios_base::binary);
+        std::fstream outputFile(
+            state.OutputPath, std::ios_base::out | std::ios_base::binary);
         if (!outputFile.is_open())
         {
-            std::println("Failed to open output file: {}", m_outputPath);
+            std::println("Failed to open output file: {}", state.OutputPath);
             return 1;
         }
 
@@ -212,23 +277,42 @@ class GmdCommand
         outputFile.close();
 
         std::println("Wrote {} entries into the {} section of {}.",
-                     additions->size(), GameCodec::Name(m_gameType), m_outputPath);
+                     additions->size(), GameCodec::Name(state.GameType),
+                     state.OutputPath);
         return 0;
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        HelpPrinter::ShowGmdHelp(context.DisplayName(CanonicalName()));
     }
 
   private:
     using NamePairs = std::vector<std::pair<std::string, std::string>>;
 
-    bool Parse(const std::span<char *> arguments)
+    struct State
     {
+        std::string DisplayName;
+        std::string InputPath;
+        std::string AdditionsPath;
+        std::string OutputPath;
+        Game GameType = GameTd;
+        bool ShowedHelp = false;
+    };
+
+    static bool Parse(const std::string &displayName,
+                      const std::span<char *> arguments, State &state)
+    {
+        state.DisplayName = displayName;
+
         if (arguments.empty())
         {
-            HelpPrinter::ShowGmdUsage(m_displayName);
-            m_showedHelp = true;
+            HelpPrinter::ShowGmdUsage(displayName);
+            state.ShowedHelp = true;
             return false;
         }
 
-        if (ParseLegacy(arguments))
+        if (ParseLegacy(arguments, state))
         {
             return true;
         }
@@ -238,14 +322,14 @@ class GmdCommand
             const std::string_view token(arguments[index]);
             if (token == "-?" || token == "--help")
             {
-                HelpPrinter::ShowGmdHelp(m_displayName);
-                m_showedHelp = true;
+                HelpPrinter::ShowGmdHelp(displayName);
+                state.ShowedHelp = true;
                 return false;
             }
             if (token == "--input")
             {
                 if (!TryReadNamedValue(arguments, index, token, "an input GMD path",
-                                       m_inputPath))
+                                       state.InputPath))
                 {
                     return false;
                 }
@@ -253,8 +337,9 @@ class GmdCommand
             }
             if (token == "--additions")
             {
-                if (!TryReadNamedValue(arguments, index, token, "an additions CSV path",
-                                       m_additionsPath))
+                if (!TryReadNamedValue(arguments, index, token,
+                                       "an additions CSV path",
+                                       state.AdditionsPath))
                 {
                     return false;
                 }
@@ -263,7 +348,7 @@ class GmdCommand
             if (token == "--output")
             {
                 if (!TryReadNamedValue(arguments, index, token, "an output GMD path",
-                                       m_outputPath))
+                                       state.OutputPath))
                 {
                     return false;
                 }
@@ -272,7 +357,8 @@ class GmdCommand
             if (token == "--game")
             {
                 std::string gameName;
-                if (!TryReadNamedValue(arguments, index, token, "a game name", gameName))
+                if (!TryReadNamedValue(arguments, index, token, "a game name",
+                                       gameName))
                 {
                     return false;
                 }
@@ -282,26 +368,27 @@ class GmdCommand
                     std::println("--game is either td, ra, ts or ra2.");
                     return false;
                 }
-                m_gameType = *game;
+                state.GameType = *game;
                 continue;
             }
 
             std::println("Invalid argument: {}", token);
-            HelpPrinter::ShowGmdUsage(m_displayName);
+            HelpPrinter::ShowGmdUsage(displayName);
             return false;
         }
 
-        if (m_inputPath.empty() || m_additionsPath.empty() || m_outputPath.empty())
+        if (state.InputPath.empty() || state.AdditionsPath.empty() ||
+            state.OutputPath.empty())
         {
             std::println("You must specify input, additions, and output paths.");
-            HelpPrinter::ShowGmdUsage(m_displayName);
+            HelpPrinter::ShowGmdUsage(displayName);
             return false;
         }
 
         return true;
     }
 
-    bool ParseLegacy(const std::span<char *> arguments)
+    static bool ParseLegacy(const std::span<char *> arguments, State &state)
     {
         if (arguments.size() < 3 || arguments.size() > 4)
         {
@@ -316,9 +403,9 @@ class GmdCommand
             }
         }
 
-        m_inputPath = arguments[0];
-        m_additionsPath = arguments[1];
-        m_outputPath = arguments[2];
+        state.InputPath = arguments[0];
+        state.AdditionsPath = arguments[1];
+        state.OutputPath = arguments[2];
         if (arguments.size() == 4)
         {
             const std::optional<Game> game = GameCodec::Parse(arguments[3]);
@@ -327,16 +414,16 @@ class GmdCommand
                 std::println("GAME must be td, ra, ts or ra2.");
                 return false;
             }
-            m_gameType = *game;
+            state.GameType = *game;
         }
 
         return true;
     }
 
-    bool TryReadNamedValue(const std::span<char *> arguments, int &index,
-                           const std::string_view optionName,
-                           const std::string_view valueDescription,
-                           std::string &value) const
+    static bool TryReadNamedValue(const std::span<char *> arguments, int &index,
+                                  const std::string_view optionName,
+                                  const std::string_view valueDescription,
+                                  std::string &value)
     {
         if (index + 1 >= static_cast<int>(arguments.size()) ||
             ArchiveCli::IsSwitchToken(arguments[index + 1]))
@@ -386,34 +473,37 @@ class GmdCommand
 
         return names;
     }
-
-    std::string m_displayName;
-    std::string m_inputPath;
-    std::string m_additionsPath;
-    std::string m_outputPath;
-    Game m_gameType = GameTd;
-    bool m_showedHelp = false;
 };
 
-class KeyCommand
+class KeyCommand final : public Command
 {
   public:
-    explicit KeyCommand(std::string_view displayName)
-        : m_displayName(displayName)
+    std::string_view CanonicalName() const override
     {
+        return "key";
     }
 
-    int Run(const std::span<char *> arguments)
+    bool Matches(const std::string_view token) const override
     {
-        if (!Parse(arguments))
+        return token == "key" || token == "mixkey";
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        State state;
+        const std::span<char *> commandArguments =
+            arguments.size() > 1 ? arguments.subspan(1) : std::span<char *>();
+        if (!Parse(context.DisplayName(CanonicalName()), commandArguments, state))
         {
-            return m_showedHelp ? 0 : 1;
+            return state.ShowedHelp ? 0 : 1;
         }
 
-        std::fstream file(m_mixPath, std::ios_base::in | std::ios_base::binary);
+        std::fstream file(
+            state.MixPath, std::ios_base::in | std::ios_base::binary);
         if (!file.is_open())
         {
-            std::println("Failed to open mix file: {}", m_mixPath);
+            std::println("Failed to open mix file: {}", state.MixPath);
             return 1;
         }
 
@@ -428,16 +518,18 @@ class KeyCommand
         constexpr int32_t MixChecksumFlag = 0x00010000;
         constexpr int32_t MixEncryptedFlag = 0x00020000;
         const int32_t flags = BufferValue<int32_t>(flagBuffer);
-        if (flags != MixEncryptedFlag && flags != MixEncryptedFlag + MixChecksumFlag)
+        if (flags != MixEncryptedFlag &&
+            flags != MixEncryptedFlag + MixChecksumFlag)
         {
-            std::println("{} does not contain an encrypted MIX header.", m_mixPath);
+            std::println("{} does not contain an encrypted MIX header.",
+                         state.MixPath);
             return 1;
         }
 
         file.clear();
         file.seekg(0, std::ios::beg);
 
-        MixHeader header(m_gameType);
+        MixHeader header(state.GameType);
         if (!header.ReadHeader(file))
         {
             std::println("Failed to decode the encrypted MIX header.");
@@ -447,7 +539,8 @@ class KeyCommand
         std::array<char, 8> firstBlock = {0};
         file.clear();
         file.seekg(84, std::ios::beg);
-        file.read(firstBlock.data(), static_cast<std::streamsize>(firstBlock.size()));
+        file.read(firstBlock.data(),
+                  static_cast<std::streamsize>(firstBlock.size()));
         if (file.gcount() != static_cast<std::streamsize>(firstBlock.size()))
         {
             std::println("Failed to read the first encrypted header block.");
@@ -459,8 +552,8 @@ class KeyCommand
         blowfish.ProcessString(reinterpret_cast<uint8_t *>(firstBlock.data()),
                                static_cast<unsigned int>(firstBlock.size()));
 
-        std::println("Mix file: {}", m_mixPath);
-        std::println("Game hint: {}", GameCodec::Name(m_gameType));
+        std::println("Mix file: {}", state.MixPath);
+        std::println("Game hint: {}", GameCodec::Name(state.GameType));
         std::println("Encrypted: {}", header.GetIsEncrypted() ? "yes" : "no");
         std::println("Checksum: {}", header.GetHasChecksum() ? "yes" : "no");
         std::println("Files: {}", header.GetFileCount());
@@ -473,13 +566,29 @@ class KeyCommand
         return 0;
     }
 
-  private:
-    bool Parse(const std::span<char *> arguments)
+    void ShowHelp(const ApplicationContext &context) const override
     {
+        HelpPrinter::ShowKeyHelp(context.DisplayName(CanonicalName()));
+    }
+
+  private:
+    struct State
+    {
+        std::string DisplayName;
+        std::string MixPath;
+        Game GameType = GameRa;
+        bool ShowedHelp = false;
+    };
+
+    static bool Parse(const std::string &displayName,
+                      const std::span<char *> arguments, State &state)
+    {
+        state.DisplayName = displayName;
+
         if (arguments.empty())
         {
-            HelpPrinter::ShowKeyUsage(m_displayName);
-            m_showedHelp = true;
+            HelpPrinter::ShowKeyUsage(displayName);
+            state.ShowedHelp = true;
             return false;
         }
 
@@ -488,13 +597,14 @@ class KeyCommand
             const std::string_view token(arguments[index]);
             if (token == "-?" || token == "--help")
             {
-                HelpPrinter::ShowKeyHelp(m_displayName);
-                m_showedHelp = true;
+                HelpPrinter::ShowKeyHelp(displayName);
+                state.ShowedHelp = true;
                 return false;
             }
             if (token == "--mix")
             {
-                if (!TryReadNamedValue(arguments, index, token, "a mix file", m_mixPath))
+                if (!TryReadNamedValue(arguments, index, token, "a mix file",
+                                       state.MixPath))
                 {
                     return false;
                 }
@@ -503,7 +613,8 @@ class KeyCommand
             if (token == "--game")
             {
                 std::string gameName;
-                if (!TryReadNamedValue(arguments, index, token, "a game name", gameName))
+                if (!TryReadNamedValue(arguments, index, token, "a game name",
+                                       gameName))
                 {
                     return false;
                 }
@@ -513,29 +624,29 @@ class KeyCommand
                     std::println("--game is either td, ra, ts or ra2.");
                     return false;
                 }
-                m_gameType = *game;
+                state.GameType = *game;
                 continue;
             }
 
             std::println("Invalid argument: {}", token);
-            HelpPrinter::ShowKeyUsage(m_displayName);
+            HelpPrinter::ShowKeyUsage(displayName);
             return false;
         }
 
-        if (m_mixPath.empty())
+        if (state.MixPath.empty())
         {
             std::println("You must specify --mix FILE.");
-            HelpPrinter::ShowKeyUsage(m_displayName);
+            HelpPrinter::ShowKeyUsage(displayName);
             return false;
         }
 
         return true;
     }
 
-    bool TryReadNamedValue(const std::span<char *> arguments, int &index,
-                           const std::string_view optionName,
-                           const std::string_view valueDescription,
-                           std::string &value) const
+    static bool TryReadNamedValue(const std::span<char *> arguments, int &index,
+                                  const std::string_view optionName,
+                                  const std::string_view valueDescription,
+                                  std::string &value)
     {
         if (index + 1 >= static_cast<int>(arguments.size()) ||
             ArchiveCli::IsSwitchToken(arguments[index + 1]))
@@ -555,12 +666,132 @@ class KeyCommand
         std::memcpy(&value, buffer, sizeof(T));
         return value;
     }
-
-    std::string m_displayName;
-    std::string m_mixPath;
-    Game m_gameType = GameRa;
-    bool m_showedHelp = false;
 };
+
+class MixCommand final : public Command
+{
+  public:
+    std::string_view CanonicalName() const override
+    {
+        return "mix";
+    }
+
+    bool Matches(const std::string_view token) const override
+    {
+        return token == CanonicalName();
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        if (arguments.size() == 1 ||
+            (arguments.size() == 2 &&
+             (std::string_view(arguments[1]) == "-?" ||
+              std::string_view(arguments[1]) == "--help")))
+        {
+            ShowHelp(context);
+            return 0;
+        }
+
+        return ArchiveCli::Run(
+            context.ProgramPath,
+            context.DisplayName(CanonicalName()),
+            arguments.subspan(1));
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        ArchiveCli::ShowHelp(context.DisplayName(CanonicalName()));
+    }
+};
+
+class ArchiveRootCommand final : public Command
+{
+  public:
+    std::string_view CanonicalName() const override
+    {
+        return "mix";
+    }
+
+    bool Matches(const std::string_view token) const override
+    {
+        return ArchiveCli::IsSwitchToken(token) || ArchiveCli::IsCommandToken(token);
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        return ArchiveCli::Run(context.ProgramPath, context.ProgramName, arguments);
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        ArchiveCli::ShowHelp(context.ProgramName);
+    }
+};
+
+class HelpCommand final : public Command
+{
+  public:
+    std::string_view CanonicalName() const override
+    {
+        return "help";
+    }
+
+    bool Matches(const std::string_view token) const override
+    {
+        return token == CanonicalName();
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        if (arguments.size() <= 1)
+        {
+            HelpPrinter::ShowGeneral(context.ProgramName);
+            return 0;
+        }
+
+        const Command *command =
+            context.Commands != nullptr ? context.Commands->Find(arguments[1]) : nullptr;
+        if (command != nullptr)
+        {
+            command->ShowHelp(context);
+            return 0;
+        }
+
+        std::println("Unknown help topic: {}", arguments[1]);
+        HelpPrinter::ShowGeneral(context.ProgramName);
+        return 1;
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        HelpPrinter::ShowHelpUsage(context.ProgramName);
+    }
+};
+
+CommandCatalog::CommandCatalog()
+{
+    Add<HelpCommand>();
+    Add<MixCommand>();
+    Add<GmdCommand>();
+    Add<KeyCommand>();
+    Add<ArchiveRootCommand>();
+}
+
+const Command *CommandCatalog::Find(const std::string_view token) const
+{
+    for (const auto &command : m_commands)
+    {
+        if (command->Matches(token))
+        {
+            return command.get();
+        }
+    }
+
+    return nullptr;
+}
 
 std::string GetExecutableName(const std::string_view programPath)
 {
@@ -577,6 +808,8 @@ int Application::Run(int argc, char **argv)
 {
     const std::string programPath = argc > 0 ? argv[0] : "wwmix";
     const std::string programName = GetExecutableName(programPath);
+    const CommandCatalog commands;
+    const ApplicationContext context = {programPath, programName, &commands};
 
     if (argc <= 1)
     {
@@ -591,77 +824,16 @@ int Application::Run(int argc, char **argv)
         return 0;
     }
 
-    if (firstToken == "help")
+    const Command *command = commands.Find(firstToken);
+    if (command == nullptr)
     {
-        if (argc == 2)
-        {
-            HelpPrinter::ShowGeneral(programName);
-            return 0;
-        }
-
-        const std::string topic = argv[2];
-        if (topic == "mix")
-        {
-            ArchiveCli::ShowHelp(programName);
-            return 0;
-        }
-        if (topic == "gmd" || topic == "gmdedit")
-        {
-            HelpPrinter::ShowGmdHelp(programName + " gmd");
-            return 0;
-        }
-        if (topic == "key" || topic == "mixkey")
-        {
-            HelpPrinter::ShowKeyHelp(programName + " key");
-            return 0;
-        }
-
-        std::println("Unknown help topic: {}", topic);
+        std::println("Unknown command: {}", firstToken);
         HelpPrinter::ShowGeneral(programName);
         return 1;
     }
 
-    if (ArchiveCli::IsSwitchToken(firstToken) || ArchiveCli::IsCommandToken(firstToken))
-    {
-        return ArchiveCli::Run(
-            programPath,
-            programName,
-            std::span<char *>(argv + 1, static_cast<std::size_t>(argc - 1)));
-    }
-
-    if (firstToken == "mix")
-    {
-        if (argc == 2 ||
-            (argc == 3 &&
-             (std::string_view(argv[2]) == "-?" ||
-              std::string_view(argv[2]) == "--help")))
-        {
-            ArchiveCli::ShowHelp(programName + " mix");
-            return 0;
-        }
-
-        return ArchiveCli::Run(
-            programPath,
-            programName + " mix",
-            std::span<char *>(argv + 2, static_cast<std::size_t>(argc - 2)));
-    }
-
-    if (firstToken == "gmd" || firstToken == "gmdedit")
-    {
-        GmdCommand command(programName + " gmd");
-        return command.Run(
-            std::span<char *>(argv + 2, static_cast<std::size_t>(argc - 2)));
-    }
-
-    if (firstToken == "key" || firstToken == "mixkey")
-    {
-        KeyCommand command(programName + " key");
-        return command.Run(
-            std::span<char *>(argv + 2, static_cast<std::size_t>(argc - 2)));
-    }
-
-    std::println("Unknown command: {}", firstToken);
-    HelpPrinter::ShowGeneral(programName);
-    return 1;
+    return command->Run(
+        context,
+        std::span<char *>(argv + 1, static_cast<std::size_t>(argc - 1)));
 }
 } // namespace WwMix
