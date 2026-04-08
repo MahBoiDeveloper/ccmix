@@ -55,8 +55,7 @@ if(MSVC AND CMAKE_GENERATOR MATCHES "Visual Studio" AND EXISTS "${CRYPTOPP_SUBMO
     COMMENT "Building vendored Crypto++ static library"
     VERBATIM
   )
-  endif()
-
+else()
   add_library(cryptopp_dependency INTERFACE)
   target_include_directories(cryptopp_dependency INTERFACE ${CRYPTOPP_INCLUDE_DIRS})
   target_link_libraries(cryptopp_dependency INTERFACE ${CRYPTOPP_LIBRARIES})
