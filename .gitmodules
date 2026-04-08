@@ -1,3 +1,6 @@
 [submodule "libs/cryptopp"]
 	path = libs/cryptopp
 	url = https://github.com/weidai11/cryptopp
+[submodule "libs/json"]
+	path = libs/json
+	url = https://github.com/nlohmann/json
