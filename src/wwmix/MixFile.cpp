@@ -1,4 +1,4 @@
-#include "mix_file.hpp"
+#include "MixFile.hpp"
 
 #include "cryptopp/sha.h"
 #include "cryptopp/integer.h"
@@ -799,7 +799,7 @@ void MixFile::PrintFileList()
 
 void MixFile::PrintInfo()
 {
-    if (m_header.GetGame())
+    if (SupportsExtendedMixHeaders(m_header.GetGame()))
     {
         std::print("This mix is a new style mix that supports header encryption"
                    " and checksums.\nRed Alert onwards can read this type of mix"

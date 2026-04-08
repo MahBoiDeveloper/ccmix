@@ -1,4 +1,4 @@
-#include "mixid.hpp"
+#include "MixId.hpp"
 #include <cstring>
 #include <cstddef>
 #include <sstream>
@@ -72,7 +72,7 @@ int32_t IdGen(Game game, const std::string &fname_in)
     }
     std::transform(fname.begin(), fname.end(), fname.begin(),
                    (int (*)(int))toupper); // convert to uppercase
-    if (game <= GameRa)
+    if (UsesClassicMixIds(game))
     { // for TD and RA
         std::size_t i = 0;
         uint32_t id = 0;

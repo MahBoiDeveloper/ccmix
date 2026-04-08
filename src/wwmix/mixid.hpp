@@ -3,15 +3,25 @@
 #include <cstdint>
 #include <string>
 
-typedef enum
+enum class Game
 {
-    GameTd,
-    GameRa,
-    GameTs,
-    GameDune2,
-    GameDune2000,
-    GameRa2
-} Game;
+    TD,
+    RA,
+    TS,
+    D2,
+    D2K,
+    RA2
+};
+
+constexpr bool UsesClassicMixIds(const Game game)
+{
+    return game == Game::TD || game == Game::RA;
+}
+
+constexpr bool SupportsExtendedMixHeaders(const Game game)
+{
+    return game != Game::TD;
+}
 
 namespace MixId
 {

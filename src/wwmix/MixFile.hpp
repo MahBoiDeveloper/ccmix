@@ -1,7 +1,7 @@
 #pragma once
-#include "mix_gmd.hpp"
-#include "mix_lmd.hpp"
-#include "mix_header.hpp"
+#include "MixGmd.hpp"
+#include "MixLmd.hpp"
+#include "MixHeader.hpp"
 #include <cstdint>
 #include <string>
 #include <fstream>
@@ -36,7 +36,7 @@ class MixFile
   public:
     /// @brief Construct a mix-file controller with a global database and default game.
     MixFile(const std::string &gmd = "global mix database.dat",
-            Game openGame = GameTd);
+            Game openGame = Game::TD);
 
     /// @brief Close any open archive state on destruction.
     virtual ~MixFile();

@@ -1,5 +1,5 @@
 /* 
- * File:   mix_lmd.hpp
+ * File:   MixLmd.hpp
  * Author: fbsagr
  *
  * Created on May 21, 2014, 11:57 AM
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "mix_numeric.hpp"
-#include "mixid.hpp"
+#include "MixNumeric.hpp"
+#include "MixId.hpp"
 
 #include <cstddef>
 #include <fstream>

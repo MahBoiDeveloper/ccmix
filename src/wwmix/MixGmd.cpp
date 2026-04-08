@@ -1,11 +1,11 @@
-#include "mix_gmd.hpp"
-#include "mix_numeric.hpp"
+#include "MixGmd.hpp"
+#include "MixNumeric.hpp"
 
 MixGmd::MixGmd()
-    : m_td_list(GameTd),
-      m_ra_list(GameRa),
-      m_ts_list(GameTs),
-      m_ra2_list(GameRa2)
+    : m_td_list(Game::TD),
+      m_ra_list(Game::RA),
+      m_ts_list(Game::TS),
+      m_ra2_list(Game::RA2)
 {
     m_db_array.push_back(&m_td_list);
     m_db_array.push_back(&m_ra_list);
@@ -63,13 +63,13 @@ std::string MixGmd::GetName(Game game, int32_t id) const
 {
     switch (game)
     {
-    case GameTd:
+    case Game::TD:
         return m_td_list.GetName(id);
-    case GameRa:
+    case Game::RA:
         return m_ra_list.GetName(id);
-    case GameTs:
+    case Game::TS:
         return m_ts_list.GetName(id);
-    case GameRa2:
+    case Game::RA2:
         return m_ra2_list.GetName(id);
     default:
         return "";
@@ -80,13 +80,13 @@ bool MixGmd::AddName(Game game, const std::string &name, const std::string &desc
 {
     switch (game)
     {
-    case GameTd:
+    case Game::TD:
         return m_td_list.AddName(name, desc);
-    case GameRa:
+    case Game::RA:
         return m_ra_list.AddName(name, desc);
-    case GameTs:
+    case Game::TS:
         return m_ts_list.AddName(name, desc);
-    case GameRa2:
+    case Game::RA2:
         return m_ra2_list.AddName(name, desc);
     default:
         return false;
@@ -97,13 +97,13 @@ bool MixGmd::DeleteName(Game game, const std::string &name)
 {
     switch (game)
     {
-    case GameTd:
+    case Game::TD:
         return m_td_list.DeleteName(name);
-    case GameRa:
+    case Game::RA:
         return m_ra_list.DeleteName(name);
-    case GameTs:
+    case Game::TS:
         return m_ts_list.DeleteName(name);
-    case GameRa2:
+    case Game::RA2:
         return m_ra2_list.DeleteName(name);
     default:
         return false;

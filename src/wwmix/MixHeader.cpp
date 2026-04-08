@@ -1,4 +1,4 @@
-#include "mix_header.hpp"
+#include "MixHeader.hpp"
 
 #include "cryptopp/rsa.h"
 #include "cryptopp/blowfish.h"
@@ -63,7 +63,7 @@ void MixHeader::Reset()
     m_file_count = 0;
     m_body_size = 0;
     m_header_flags = 0;
-    m_header_size = m_game_type ? 10 : 6;
+    m_header_size = SupportsExtendedMixHeaders(m_game_type) ? 10 : 6;
     m_has_checksum = false;
     m_is_encrypted = false;
     m_index.clear();
@@ -92,10 +92,10 @@ bool MixHeader::ReadHeader(std::fstream &fh)
 
     if (MixHeaderSupport::BufferValue<uint16_t>(flagbuff))
     {
-        if (m_game_type > 1)
+        if (!UsesClassicMixIds(m_game_type))
         {
-            //m_game_type = GameTd;
-            std::println("Warning, header indicates mix is of type \"GameTd\" but isn't what you specified");
+            //m_game_type = Game::TD;
+            std::println("Warning, header indicates mix is of type \"TD\" but isn't what you specified");
         }
 
         m_file_count = MixHeaderSupport::BufferValue<uint16_t>(flagbuff);
@@ -105,7 +105,7 @@ bool MixHeader::ReadHeader(std::fstream &fh)
     }
     else
     {
-        if (!m_game_type)
+        if (!SupportsExtendedMixHeaders(m_game_type))
         {
             std::println("Warning, game type is td but header is new format.");
         }
@@ -335,7 +335,7 @@ void MixHeader::SetKeySource()
                       Integer(MixHeaderSupport::PrivateKey.c_str()),
                       Integer("0x10001"));
 
-    if (m_game_type > GameRa)
+    if (!UsesClassicMixIds(m_game_type))
     {
         byte1 = 0x18;
         byte2 = 0xBB;
@@ -414,7 +414,7 @@ bool MixHeader::WriteHeader(std::fstream &fh)
 bool MixHeader::WriteUnencrypted(std::fstream &fh)
 {
     //write flags if supported by game format
-    if (m_game_type)
+    if (SupportsExtendedMixHeaders(m_game_type))
         fh.write(reinterpret_cast<const char *>(&m_header_flags), 4);
 
     //write header info
@@ -575,7 +575,7 @@ IndexInfo MixHeader::GetEntry(int32_t id) const
 
 void MixHeader::SetHasChecksum()
 {
-    if (m_game_type)
+    if (SupportsExtendedMixHeaders(m_game_type))
     {
         m_has_checksum = true;
         m_header_flags |= mix_checksum;
@@ -584,7 +584,7 @@ void MixHeader::SetHasChecksum()
 
 void MixHeader::ClearHasChecksum()
 {
-    if (m_game_type)
+    if (SupportsExtendedMixHeaders(m_game_type))
     {
         m_has_checksum = false;
         m_header_flags &= ~(mix_checksum);
@@ -593,7 +593,7 @@ void MixHeader::ClearHasChecksum()
 
 void MixHeader::SetIsEncrypted()
 {
-    if (m_game_type)
+    if (SupportsExtendedMixHeaders(m_game_type))
     {
         uint32_t block_count = ((m_file_count * 12) + 6) / 8;
         if (((m_file_count * 12) + 6) % 8)
@@ -607,7 +607,7 @@ void MixHeader::SetIsEncrypted()
 
 void MixHeader::ClearIsEncrypted()
 {
-    if (m_game_type)
+    if (SupportsExtendedMixHeaders(m_game_type))
     {
         m_header_size = 10 + m_file_count * 12;
         m_is_encrypted = false;

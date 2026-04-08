@@ -1,5 +1,5 @@
 /* 
- * File:   mix_header.hpp
+ * File:   MixHeader.hpp
  * Author: fbsagr
  *
  * Created on June 5, 2014, 4:37 PM
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "mixid.hpp"
+#include "MixId.hpp"
 
 #include <string>
 #include <fstream>

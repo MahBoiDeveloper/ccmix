@@ -1,6 +1,6 @@
-#include "archive_cli.hpp"
+#include "ArchiveCli.hpp"
 
-#include "mix_file.hpp"
+#include "MixFile.hpp"
 
 #include <array>
 #include <charconv>
@@ -86,7 +86,7 @@ struct ArchiveCliOptions
     std::vector<std::string> Operands;
     std::string Directory;
     uint32_t FileId = 0;
-    Game GameType = GameTd;
+    Game GameType = Game::TD;
     bool CreateLocalDb = false;
     bool EncryptHeader = false;
     bool AddChecksum = false;
@@ -144,19 +144,19 @@ class ArchiveGameCodec
     {
         if (ArchiveStringUtil::EqualsIgnoreCase(gameName, "td"))
         {
-            return GameTd;
+            return Game::TD;
         }
         if (ArchiveStringUtil::EqualsIgnoreCase(gameName, "ra"))
         {
-            return GameRa;
+            return Game::RA;
         }
         if (ArchiveStringUtil::EqualsIgnoreCase(gameName, "ts"))
         {
-            return GameTs;
+            return Game::TS;
         }
         if (ArchiveStringUtil::EqualsIgnoreCase(gameName, "ra2"))
         {
-            return GameRa2;
+            return Game::RA2;
         }
 
         return std::nullopt;

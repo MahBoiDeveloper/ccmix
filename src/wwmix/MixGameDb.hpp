@@ -1,5 +1,5 @@
 /* 
- * File:   mix_game_db.hpp
+ * File:   MixGameDb.hpp
  * Author: fbsagr
  *
  * Created on June 3, 2014, 3:40 PM
@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "mix_numeric.hpp"
-#include "mixid.hpp"
+#include "MixNumeric.hpp"
+#include "MixId.hpp"
 
 #include <cstddef>
 #include <string>

@@ -102,15 +102,15 @@ set(GMDEDIT_SRC
    )
 
 set(WWMIX_SRC
-    ${PROJECT_SRC_DIR}/wwmix/archive_cli.cpp
+    ${PROJECT_SRC_DIR}/wwmix/ArchiveCli.cpp
     ${PROJECT_SRC_DIR}/wwmix/main.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_game_db.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_gmd.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_lmd.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_file.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_header.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mixid.cpp
-    ${PROJECT_SRC_DIR}/wwmix/wwmix.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixGameDb.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixGmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixLmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixFile.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixHeader.cpp
+    ${PROJECT_SRC_DIR}/wwmix/MixId.cpp
+    ${PROJECT_SRC_DIR}/wwmix/Application.cpp
    )
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)

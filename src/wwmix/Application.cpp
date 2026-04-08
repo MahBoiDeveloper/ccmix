@@ -1,9 +1,9 @@
-#include "wwmix.hpp"
+#include "Application.hpp"
 
-#include "archive_cli.hpp"
-#include "mix_gmd.hpp"
-#include "mix_header.hpp"
-#include "mixid.hpp"
+#include "ArchiveCli.hpp"
+#include "MixGmd.hpp"
+#include "MixHeader.hpp"
+#include "MixId.hpp"
 
 #include "cryptopp/blowfish.h"
 #include "cryptopp/modes.h"
@@ -77,13 +77,13 @@ class GameCodec
         switch (Match(token))
         {
         case Match("td"):
-            return GameTd;
+            return Game::TD;
         case Match("ra"):
-            return GameRa;
+            return Game::RA;
         case Match("ts"):
-            return GameTs;
+            return Game::TS;
         case Match("ra2"):
-            return GameRa2;
+            return Game::RA2;
         default:
             return std::nullopt;
         }
@@ -93,13 +93,13 @@ class GameCodec
     {
         switch (game)
         {
-        case GameTd:
+        case Game::TD:
             return "td";
-        case GameRa:
+        case Game::RA:
             return "ra";
-        case GameTs:
+        case Game::TS:
             return "ts";
-        case GameRa2:
+        case Game::RA2:
             return "ra2";
         default:
             return "unknown";
@@ -296,7 +296,7 @@ class GmdCommand final : public Command
         std::string InputPath;
         std::string AdditionsPath;
         std::string OutputPath;
-        Game GameType = GameTd;
+        Game GameType = Game::TD;
         bool ShowedHelp = false;
     };
 
@@ -576,7 +576,7 @@ class KeyCommand final : public Command
     {
         std::string DisplayName;
         std::string MixPath;
-        Game GameType = GameRa;
+        Game GameType = Game::RA;
         bool ShowedHelp = false;
     };
 
