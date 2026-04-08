@@ -1,7 +1,7 @@
 #include "wwmix.hpp"
 
 #include "archive_cli.hpp"
-#include "mix_db_gmd.hpp"
+#include "mix_gmd.hpp"
 #include "mix_header.hpp"
 #include "mixid.hpp"
 

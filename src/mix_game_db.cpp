@@ -1,4 +1,4 @@
-#include "mix_db_gamedb.hpp"
+#include "mix_game_db.hpp"
 #include "mixid.hpp"
 #include <cstring>
 #include <print>

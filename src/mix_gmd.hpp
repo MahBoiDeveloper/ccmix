@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_gmd.hpp
+ * File:   mix_gmd.hpp
  * Author: fbsagr
  *
  * Created on May 30, 2014, 4:30 PM
@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "mix_db_gamedb.hpp"
+#include "mix_game_db.hpp"
 
 #include <vector>
 #include <fstream>

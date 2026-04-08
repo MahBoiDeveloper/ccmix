@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_gamedb.hpp
+ * File:   mix_game_db.hpp
  * Author: fbsagr
  *
  * Created on June 3, 2014, 3:40 PM

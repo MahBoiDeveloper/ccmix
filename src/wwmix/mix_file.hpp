@@ -1,6 +1,6 @@
 #pragma once
-#include "mix_db_gmd.hpp"
-#include "mix_db_lmd.hpp"
+#include "mix_gmd.hpp"
+#include "mix_lmd.hpp"
 #include "mix_header.hpp"
 #include <cstdint>
 #include <string>

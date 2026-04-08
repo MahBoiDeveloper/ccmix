@@ -85,14 +85,14 @@ else()
 endif()
 
 set(SHARED_SRC
-    ${PROJECT_SRC_DIR}/mix_db_gmd.cpp
-    ${PROJECT_SRC_DIR}/mix_db_gamedb.cpp
+    ${PROJECT_SRC_DIR}/mix_gmd.cpp
+    ${PROJECT_SRC_DIR}/mix_game_db.cpp
     ${PROJECT_SRC_DIR}/mixid.cpp
    )
 
 set(CCMIX_SRC
     ${PROJECT_SRC_DIR}/ccmix.cpp
-    ${PROJECT_SRC_DIR}/mix_db_lmd.cpp
+    ${PROJECT_SRC_DIR}/mix_lmd.cpp
     ${PROJECT_SRC_DIR}/mix_file.cpp
     ${PROJECT_SRC_DIR}/mix_header.cpp
    )
@@ -104,9 +104,9 @@ set(GMDEDIT_SRC
 set(WWMIX_SRC
     ${PROJECT_SRC_DIR}/wwmix/archive_cli.cpp
     ${PROJECT_SRC_DIR}/wwmix/main.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_db_gamedb.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_db_gmd.cpp
-    ${PROJECT_SRC_DIR}/wwmix/mix_db_lmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_game_db.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_gmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_lmd.cpp
     ${PROJECT_SRC_DIR}/wwmix/mix_file.cpp
     ${PROJECT_SRC_DIR}/wwmix/mix_header.cpp
     ${PROJECT_SRC_DIR}/wwmix/mixid.cpp

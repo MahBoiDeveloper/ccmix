@@ -1,4 +1,4 @@
-#include "mix_db_gmd.hpp"
+#include "mix_gmd.hpp"
 #include "mix_numeric.hpp"
 
 MixGmd::MixGmd()

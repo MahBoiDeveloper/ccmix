@@ -1,5 +1,5 @@
 /* 
- * File:   mix_db_lmd.hpp
+ * File:   mix_lmd.hpp
  * Author: fbsagr
  *
  * Created on May 21, 2014, 11:57 AM
