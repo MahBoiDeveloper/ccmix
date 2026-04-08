@@ -154,6 +154,51 @@ class MixFileIo
     }
 };
 
+class MixFileInfoSupport
+{
+  public:
+    static const char *GameLabel(const Game game)
+    {
+        switch (game)
+        {
+        case Game::TD:
+            return "TD";
+        case Game::RA:
+            return "RA";
+        case Game::TS:
+            return "TS";
+        case Game::D2:
+            return "D2";
+        case Game::D2K:
+            return "D2K";
+        case Game::RA2:
+            return "RA2";
+        default:
+            return "Unknown";
+        }
+    }
+
+    static bool HasExtendedHeaderLayout(const MixHeader &header)
+    {
+        const uint32_t classicHeaderSize =
+            6u + static_cast<uint32_t>(header.GetFileCount()) * 12u;
+        return header.GetHeaderSize() != classicHeaderSize;
+    }
+
+    static const char *HeaderLayoutLabel(const MixHeader &header)
+    {
+        if (header.GetIsEncrypted())
+        {
+            return "extended encrypted";
+        }
+        if (HasExtendedHeaderLayout(header))
+        {
+            return "extended";
+        }
+        return "classic";
+    }
+};
+
 std::string MixFile::BaseName(const std::string &pathname) const
 {
     return std::filesystem::path(pathname).filename().string();
@@ -799,31 +844,68 @@ void MixFile::PrintFileList()
 
 void MixFile::PrintInfo()
 {
-    if (SupportsExtendedMixHeaders(m_header.GetGame()))
+    const bool hasExtendedLayout = MixFileInfoSupport::HasExtendedHeaderLayout(m_header);
+    const bool isEncrypted = m_header.GetIsEncrypted();
+    const uint32_t fileCount = static_cast<uint32_t>(m_header.GetFileCount());
+    const uint32_t plainIndexSize = fileCount * 12u;
+
+    std::println("Archive: {}", m_file_path);
+    std::println("Header:");
+    std::println("  Game format:        {}",
+                 MixFileInfoSupport::GameLabel(m_header.GetGame()));
+    std::println("  Layout:             {}",
+                 MixFileInfoSupport::HeaderLayoutLabel(m_header));
+    std::println("  Header size:        {} bytes", m_header.GetHeaderSize());
+    std::println("  Body offset:        {} bytes", m_header.GetHeaderSize());
+    std::println("  File count:         {}", m_header.GetFileCount());
+    std::println("  Body size:          {} bytes", m_header.GetBodySize());
+    std::println("  Plain index size:   {} bytes", plainIndexSize);
+
+    if (isEncrypted)
     {
-        std::print("This mix is a new style mix that supports header encryption"
-                   " and checksums.\nRed Alert onwards can read this type of mix"
-                   " but the ID's used differ between Red Alert and later games.\n\n");
+        std::println("  Flags block:        4 bytes");
+        std::println("  Header flags:       {:#010x}", m_header.GetHeaderFlags());
+        std::println("  Key source block:   80 bytes");
+        std::println("  Encrypted blob:     {} bytes",
+                     m_header.GetHeaderSize() - 84u);
     }
     else
     {
-        std::print("This mix is an old style mix that doesn't support header"
-                   " encryption or\nchecksums.\nTiberian Dawn and Sole Survivor"
-                   " use this format exclusively and Red Alert can\nuse them as well"
-                   ".\n\n");
+        std::println("  Flags block:        {}",
+                     hasExtendedLayout ? "present" : "absent");
+        if (hasExtendedLayout)
+        {
+            std::println("  Header flags:       {:#010x}", m_header.GetHeaderFlags());
+            std::println("  Metadata block:     10 bytes");
+            std::println("  Index block:        {} bytes",
+                         m_header.GetHeaderSize() - 10u);
+        }
+        else
+        {
+            std::println("  Metadata block:     6 bytes");
+            std::println("  Index block:        {} bytes",
+                         m_header.GetHeaderSize() - 6u);
+        }
     }
-    std::println("It contains {} files which take up {} bytes\n",
-                 m_header.GetFileCount(), m_header.GetBodySize());
+
+    std::println("  Encrypted:          {}", isEncrypted ? "yes" : "no");
+    std::println("  Has checksum:       {}",
+                 m_header.GetHasChecksum() ? "yes" : "no");
+
     if (m_header.GetIsEncrypted())
     {
-        std::println("The mix has an encrypted header.\n\nThe blowfish key is {}\n",
+        std::println("");
+        std::println("Encryption:");
+        std::println("  Blowfish key:       {}",
                      MixId::IdStr(m_header.GetKey(), 56));
-        std::println("The key was recovered from the following key source:\n{}\n",
+        std::println("  Key source:         {}",
                      MixId::IdStr(m_header.GetKeySource(), 80));
     }
     if (m_header.GetHasChecksum())
     {
-        std::println("The mix has a SHA1 checksum:\nSHA1: {}\n",
+        std::println("");
+        std::println("Checksum:");
+        std::println("  SHA1:               {}",
                      MixId::IdStr(reinterpret_cast<const char *>(m_checksum), 20));
     }
 }

@@ -140,6 +140,12 @@ class MixHeader
         return m_header_size;
     }
 
+    /// @brief Return the raw extended-header flag word.
+    uint32_t GetHeaderFlags() const
+    {
+        return m_header_flags;
+    }
+
     /// @brief Return the archive body size in bytes.
     uint32_t GetBodySize() const
     {
