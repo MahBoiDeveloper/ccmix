@@ -259,30 +259,26 @@ void MixHeader::SetKey()
     uint8_t keybuf[80];
 
     //decode public and private keys and convert to Integer
-    /*
-    std::string pubkey;
-    std::string prvkey;
-    Base64Decoder decode;
-    decode.Put(reinterpret_cast<const uint8_t*>(PUBKEY), KEYSIZE);
-    pubkey.resize(decode.MaxRetrievable());
-    decode.Get((uint8_t*)pubkey.data(), pubkey.size());
-    decode.Put(reinterpret_cast<const uint8_t*>(PRVKEY), KEYSIZE);
-    prvkey.resize(decode.MaxRetrievable());
-    decode.Get((uint8_t*)prvkey.data(), prvkey.size());
-    pubkey.erase(0, 2);
-    prvkey.erase(0, 2);
-     * 
-    Integer n((uint8_t*)pubkey.data(), pubkey.size()), 
-            e("0x10001"), 
-            d((uint8_t*)prvkey.data(), prvkey.size());
-     */
+    //std::string pubkey;
+    //std::string prvkey;
+    //Base64Decoder decode;
+    //decode.Put(reinterpret_cast<const uint8_t*>(PUBKEY), KEYSIZE);
+    //pubkey.resize(decode.MaxRetrievable());
+    //decode.Get((uint8_t*)pubkey.data(), pubkey.size());
+    //decode.Put(reinterpret_cast<const uint8_t*>(PRVKEY), KEYSIZE);
+    //prvkey.resize(decode.MaxRetrievable());
+    //decode.Get((uint8_t*)prvkey.data(), prvkey.size());
+    //pubkey.erase(0, 2);
+    //prvkey.erase(0, 2);
+    //
+    //Integer n((uint8_t*)pubkey.data(), pubkey.size()),
+    //        e("0x10001"),
+    //        d((uint8_t*)prvkey.data(), prvkey.size());
 
     //setup the key integers for RSA
-    /*
-    Integer n(PUBKEY), 
-            e("0x10001"), 
-            d(PRVKEY);
-     */
+    //Integer n(PUBKEY),
+    //        e("0x10001"),
+    //        d(PRVKEY);
 
     //setup RSA key structure
     RSA::PrivateKey rsakey;
@@ -543,21 +539,21 @@ bool MixHeader::RemoveEntry(int32_t id, bool adjust)
 }
 
 //Would there be a use for this?
-/*void MixHeader::setGame(Game game)
-{
-    Game old = m_game_type
-    m_game_type = game;
-    
-    //have we gone from new type header to old?
-    if(old & !m_game_type) {
-        ClearIsEncrypted();
-        ClearHasChecksum();
-        m_header_size -= 4;
-    } else if (!old & m_game_type) {
-        m_header_size += 4;
-    }
-    
-}*/
+//void MixHeader::setGame(Game game)
+//{
+//    Game old = m_game_type
+//    m_game_type = game;
+//
+//    //have we gone from new type header to old?
+//    if(old & !m_game_type) {
+//        ClearIsEncrypted();
+//        ClearHasChecksum();
+//        m_header_size -= 4;
+//    } else if (!old & m_game_type) {
+//        m_header_size += 4;
+//    }
+//
+//}
 
 IndexInfo MixHeader::GetEntry(int32_t id) const
 {

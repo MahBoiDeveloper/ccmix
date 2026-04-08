@@ -1,9 +1,6 @@
-/* 
- * File:   MixGmd.hpp
- * Author: fbsagr
- *
- * Created on May 30, 2014, 4:30 PM
- */
+// File: MixGmd.hpp
+// Author: fbsagr
+// Created on May 30, 2014, 4:30 PM
 
 #pragma once
 

@@ -5,7 +5,6 @@
 #include "MixGmd.hpp"
 #include "MixHeader.hpp"
 #include "MixId.hpp"
-#include "Utf8Path.hpp"
 
 #include "cryptopp/blowfish.h"
 #include "cryptopp/modes.h"
@@ -40,11 +39,13 @@ struct ApplicationContext
 
     std::string ProgramDirectory() const
     {
-        const std::filesystem::path programPath = Utf8Path::FromUtf8(ProgramPath);
+        const std::filesystem::path programPath =
+            std::filesystem::u8path(ProgramPath);
         const std::filesystem::path programDir =
             programPath.has_parent_path() ? programPath.parent_path() :
                                             std::filesystem::path(".");
-        return Utf8Path::ToUtf8(programDir);
+        const std::u8string programDirText = programDir.u8string();
+        return std::string(programDirText.begin(), programDirText.end());
     }
 
     std::string DisplayName(const std::string_view commandName) const
@@ -59,16 +60,20 @@ struct ApplicationContext
 
     std::string GmdCachePath() const
     {
-        return Utf8Path::Join(ProgramDirectory(), "gmd.json");
+        const std::filesystem::path cachePath =
+            std::filesystem::u8path(ProgramDirectory()) / "gmd.json";
+        const std::u8string cachePathText = cachePath.u8string();
+        return std::string(cachePathText.begin(), cachePathText.end());
     }
 
     std::string GlobalDbPath() const
     {
         const std::filesystem::path localPath =
-            Utf8Path::FromUtf8(ProgramDirectory()) / "global mix database.dat";
+            std::filesystem::u8path(ProgramDirectory()) / "global mix database.dat";
         if (std::filesystem::exists(localPath))
         {
-            return Utf8Path::ToUtf8(localPath);
+            const std::u8string localPathText = localPath.u8string();
+            return std::string(localPathText.begin(), localPathText.end());
         }
 
         return "global mix database.dat";
@@ -383,8 +388,8 @@ class GmdCommand final : public Command
         }
 
         std::fstream outputFile;
-        Utf8Path::Open(
-            outputFile, state.OutputPath,
+        outputFile.open(
+            std::filesystem::u8path(state.OutputPath),
             std::ios_base::out | std::ios_base::binary);
         if (!outputFile.is_open())
         {
@@ -559,7 +564,7 @@ class GmdCommand final : public Command
     static std::optional<NamePairs> ReadAdditions(const std::string &path)
     {
         std::fstream file;
-        Utf8Path::Open(file, path, std::ios_base::in);
+        file.open(std::filesystem::u8path(path), std::ios_base::in);
         if (!file.is_open())
         {
             std::println("Failed to open additions file: {}", path);
@@ -621,8 +626,8 @@ class KeyCommand final : public Command
         }
 
         std::fstream file;
-        Utf8Path::Open(
-            file, state.MixPath,
+        file.open(
+            std::filesystem::u8path(state.MixPath),
             std::ios_base::in | std::ios_base::binary);
         if (!file.is_open())
         {

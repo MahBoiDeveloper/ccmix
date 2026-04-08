@@ -1,9 +1,6 @@
-/* 
- * File:   MixLmd.hpp
- * Author: fbsagr
- *
- * Created on May 21, 2014, 11:57 AM
- */
+// File: MixLmd.hpp
+// Author: fbsagr
+// Created on May 21, 2014, 11:57 AM
 
 #pragma once
 

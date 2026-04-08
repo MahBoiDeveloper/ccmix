@@ -1,9 +1,6 @@
-/* 
- * File:   MixGameDb.hpp
- * Author: fbsagr
- *
- * Created on June 3, 2014, 3:40 PM
- */
+// File: MixGameDb.hpp
+// Author: fbsagr
+// Created on June 3, 2014, 3:40 PM
 
 #pragma once
 

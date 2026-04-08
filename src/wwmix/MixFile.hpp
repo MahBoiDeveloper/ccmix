@@ -8,29 +8,24 @@
 #include <vector>
 #include <map>
 
-/**
- * @brief Mix Databases.
- * 
- * Global Mix Database holds mappings between file id's and their names as well
- * as additional details about the file such as what it represents in game. The 
- * file consists of several sections that contain a little endian uint32_t count
- * of how many entries are in the DB followed by 0 separated strings of 
- * alternating filenames and descriptions. The ID's themselves are generated on
- * loading database.
- * 
- * Local Mix Databases hold just filenames but have a more complicated header.
- * It consists first of a 32 byte string, the xcc_id which appears to be a kind
- * of digital signature for the XCC tools author.
- * 
- * 
- */
+// Mix Databases.
+//
+// Global Mix Database holds mappings between file id's and their names as well
+// as additional details about the file such as what it represents in game. The
+// file consists of several sections that contain a little endian uint32_t count
+// of how many entries are in the DB followed by 0 separated strings of
+// alternating filenames and descriptions. The ID's themselves are generated on
+// loading database.
+//
+// Local Mix Databases hold just filenames but have a more complicated header.
+// It consists first of a 32 byte string, the xcc_id which appears to be a kind
+// of digital signature for the XCC tools author.
 
-/**
- * @brief mix file controller
- * 
- * Some parts of code and code are taken from XCC mix file specification.
- * @sa TS mix file format specification (http://xhp.xwis.net/documents/MIX_Format.html)
- */
+// mix file controller
+//
+// Some parts of code and code are taken from XCC mix file specification.
+// TS mix file format specification:
+// http://xhp.xwis.net/documents/MIX_Format.html
 class MixFile
 {
   public:

@@ -1,9 +1,6 @@
-/* 
- * File:   MixHeader.hpp
- * Author: fbsagr
- *
- * Created on June 5, 2014, 4:37 PM
- */
+// File: MixHeader.hpp
+// Author: fbsagr
+// Created on June 5, 2014, 4:37 PM
 
 #pragma once
 
@@ -23,61 +20,56 @@ typedef std::map<int32_t, IndexInfo> MixIndex;
 typedef std::pair<int32_t, IndexInfo> MixEntry;
 typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
 
-/**
- * @brief Mix archive header.
- * 
- * Mix archive starts with archive header storing information about number of files
- * included and their total size. Some archives (RA/TS) starts with 4b flags, which
- * is followed by header.
- * 
- * @par old mix format header
- *  - 2B - number of files
- *  - 4B - total content's size
- * 
- * @par RA/TS mix format header
- *  - 4B - flags
- *  - 2B - number of files
- *  - 4B - total content's size
- * 
- * @section archivetype determine what type archive is
- * Now here comes part which might be hard to understand. Data are stored in 
- * little endian format, which means little ending is stored first and big ending
- * last. Number 0x11223344, where little ending is 44, will be stored like this
- * 44 33 22 11 - bytes are stored in reverse direction as you can see.
- * 
- * Flags are stored only in LAST 2 bytes, that means if file starts with flags,
- * FIRST 2 bytes are 00 00, and other 2 bytes contains flag. If there are no flags,
- * archive can not start with 00 00, because that would mean it contains no files.
- * 
- * So we read header no matter what type archive is and check for first two bytes,which are stored in c_files. If c_files == 0, we take first 4 bytes, which are
- * stored in flags as flag information, move file pointer to 4th byte and repeat 
- * reading of header (6b). Now c_files contains number of files and size contains
- * size of all files.
- */
+// Mix archive header.
+//
+// Mix archive starts with archive header storing information about number of files
+// included and their total size. Some archives (RA/TS) starts with 4b flags, which
+// is followed by header.
+//
+// old mix format header
+//  - 2B - number of files
+//  - 4B - total content's size
+//
+// RA/TS mix format header
+//  - 4B - flags
+//  - 2B - number of files
+//  - 4B - total content's size
+//
+// determine what type archive is
+// Now here comes part which might be hard to understand. Data are stored in
+// little endian format, which means little ending is stored first and big ending
+// last. Number 0x11223344, where little ending is 44, will be stored like this
+// 44 33 22 11 - bytes are stored in reverse direction as you can see.
+//
+// Flags are stored only in LAST 2 bytes, that means if file starts with flags,
+// FIRST 2 bytes are 00 00, and other 2 bytes contains flag. If there are no flags,
+// archive can not start with 00 00, because that would mean it contains no files.
+//
+// So we read header no matter what type archive is and check for first two bytes,
+// which are stored in c_files. If c_files == 0, we take first 4 bytes, which are
+// stored in flags as flag information, move file pointer to 4th byte and repeat
+// reading of header (6b). Now c_files contains number of files and size contains
+// size of all files.
 
-/**
- * @brief Included file header.
- * 
- * Right after mix file header comes file index. Every included file has it's entry
- * there storing information about it's CRC ID (mix archive doesn't store information
- * about file names, but CRC ID can be calculated from file name), offset in body
- * block and size. Remember that you have to add body offset to file offset before you read
- * a file data.
- * 
- * @par structure of index entry
- * - 4B - CRC id
- * - 4B - file offset
- * - 4B - file size
- * 
- * @par count body offset
- * To get body offset, you have to count size of information before body.
- * - does archive contain flags? (4B if so)
- * - mix archive header (6B) 
- * - file index (c_files * 12B)
- * - is archive encrypted? (80B if so)
- * 
- * 
- */
+// Included file header.
+//
+// Right after mix file header comes file index. Every included file has it's entry
+// there storing information about it's CRC ID (mix archive doesn't store information
+// about file names, but CRC ID can be calculated from file name), offset in body
+// block and size. Remember that you have to add body offset to file offset before
+// you read a file data.
+//
+// structure of index entry
+// - 4B - CRC id
+// - 4B - file offset
+// - 4B - file size
+//
+// count body offset
+// To get body offset, you have to count size of information before body.
+// - does archive contain flags? (4B if so)
+// - mix archive header (6B)
+// - file index (c_files * 12B)
+// - is archive encrypted? (80B if so)
 
 class MixHeader
 {

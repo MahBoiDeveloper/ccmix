@@ -1,5 +1,4 @@
 #include "MixFile.hpp"
-#include "Utf8Path.hpp"
 
 #include "cryptopp/sha.h"
 #include "cryptopp/integer.h"
@@ -20,7 +19,10 @@ class MixFileIo
     static std::string JoinPath(const std::string &directory,
                                 const std::string &name)
     {
-        return Utf8Path::Join(directory, name);
+        const std::filesystem::path joinedPath =
+            std::filesystem::u8path(directory) / name;
+        const std::u8string joinedPathText = joinedPath.u8string();
+        return std::string(joinedPathText.begin(), joinedPathText.end());
     }
 
     static bool TryGetRegularFileSize(const std::filesystem::path &path,
@@ -151,7 +153,8 @@ class MixFileIo
 
     static void RemoveTempFile()
     {
-        Utf8Path::Remove(TempFilePath);
+        std::error_code error;
+        std::filesystem::remove(std::filesystem::u8path(TempFilePath), error);
     }
 };
 
@@ -202,7 +205,9 @@ class MixFileInfoSupport
 
 std::string MixFile::BaseName(const std::string &pathname) const
 {
-    return Utf8Path::FileName(pathname);
+    const std::filesystem::path path = std::filesystem::u8path(pathname);
+    const std::u8string filename = path.filename().u8string();
+    return std::string(filename.begin(), filename.end());
 }
 
 MixFile::MixFile(const std::string &gmd, Game game, const std::string &gmdCache)
@@ -241,7 +246,7 @@ bool MixFile::Open(const std::string &path, const bool writeAccess)
     const std::ios::openmode openMode =
         writeAccess ? std::fstream::in | std::fstream::out | std::fstream::binary :
                       std::fstream::in | std::fstream::binary;
-    Utf8Path::Open(fh, path, openMode);
+    fh.open(std::filesystem::u8path(path), openMode);
     if (!fh.is_open())
     {
         std::println("File {} failed to open", path);
@@ -336,7 +341,7 @@ bool MixFile::ExtractFile(int32_t id, const std::string &out)
         }
 
         std::ofstream of;
-        Utf8Path::Open(of, out, std::ios_base::binary);
+        of.open(std::filesystem::u8path(out), std::ios_base::binary);
         if (!of.is_open())
         {
             return false;
@@ -370,12 +375,12 @@ bool MixFile::CreateMix(const std::string &fileName, const std::string &in_dir,
         m_header.SetHasChecksum();
 
     //cout << "Game we are building for is " << m_header.GetGame() << endl;
-    /*if(m_header.GetIsEncrypted()){
-        cout << "Header will be encrypted." << endl;
-    }*/
+    //if(m_header.GetIsEncrypted()){
+    //    cout << "Header will be encrypted." << endl;
+    //}
 
     //make sure we can iterate the directory
-    const std::filesystem::path inputDirectory = Utf8Path::FromUtf8(in_dir);
+    const std::filesystem::path inputDirectory = std::filesystem::u8path(in_dir);
     std::error_code directoryError;
     std::filesystem::directory_iterator iterator(inputDirectory, directoryError);
     if (directoryError)
@@ -399,8 +404,10 @@ bool MixFile::CreateMix(const std::string &fileName, const std::string &in_dir,
         uint32_t fileSize = 0;
         if (MixFileIo::TryGetRegularFileSize(directoryEntry.path(), fileSize))
         {
-            const std::string filename =
-                Utf8Path::ToUtf8(directoryEntry.path().filename());
+            const std::u8string filenameText =
+                directoryEntry.path().filename().u8string();
+            const std::string filename(
+                filenameText.begin(), filenameText.end());
 
             //check if we have an ID containing file name, if not add to localdb
             if (!MixId::IsIdName(filename))
@@ -436,23 +443,21 @@ bool MixFile::CreateMix(const std::string &fileName, const std::string &in_dir,
     //cout << m_header.GetBodySize() << " files, total size " << m_header.GetFileCount() << " before writing header" << endl;
 
     //if we are encrypted, get a key source
-    /*
-    if(m_header.GetIsEncrypted()){
-        ifile.open(key_src.c_str(), ios::binary|ios::in);
-        //ReadKeySource checks if file is actually open
-        if(!m_header.ReadKeySource(ifile)){
-            cout << "Could not open a key_source, encryption disabled" << endl;
-            m_header.ClearIsEncrypted();
-        } else {
-            cout << "Header will be encrypted" << endl;
-        }
-        ifile.close();
-    }
-    */
+    //if(m_header.GetIsEncrypted()){
+    //    ifile.open(key_src.c_str(), ios::binary|ios::in);
+    //    //ReadKeySource checks if file is actually open
+    //    if(!m_header.ReadKeySource(ifile)){
+    //        cout << "Could not open a key_source, encryption disabled" << endl;
+    //        m_header.ClearIsEncrypted();
+    //    } else {
+    //        cout << "Header will be encrypted" << endl;
+    //    }
+    //    ifile.close();
+    //}
 
     //time to start writing our new file
-    Utf8Path::Open(
-        fh, fileName,
+    fh.open(
+        std::filesystem::u8path(fileName),
         std::fstream::in | std::fstream::out | std::fstream::binary |
             std::fstream::trunc);
 
@@ -483,8 +488,8 @@ bool MixFile::CreateMix(const std::string &fileName, const std::string &in_dir,
         const std::string input_path = MixFileIo::JoinPath(in_dir, filenames[i]);
         std::println("{}", input_path);
         std::fstream ifile;
-        Utf8Path::Open(
-            ifile, input_path,
+        ifile.open(
+            std::filesystem::u8path(input_path),
             std::fstream::in | std::fstream::binary);
         if (!ifile.is_open())
         {
@@ -559,7 +564,7 @@ bool MixFile::AddFile(const std::string &name)
 
     //stat file to add and check its not a directory
     uint32_t fileSize = 0;
-    if (!MixFileIo::TryGetRegularFileSize(Utf8Path::FromUtf8(name), fileSize))
+    if (!MixFileIo::TryGetRegularFileSize(std::filesystem::u8path(name), fileSize))
     {
         std::println("Cannot add directory as a file");
         return false;
@@ -579,8 +584,8 @@ bool MixFile::AddFile(const std::string &name)
     }
 
     //open a temp file
-    Utf8Path::Open(
-        ofh, MixFileIo::TempFilePath,
+    ofh.open(
+        std::filesystem::u8path(MixFileIo::TempFilePath),
         std::ios::binary | std::ios::out | std::ios::trunc);
     if (!ofh.is_open())
     {
@@ -604,7 +609,7 @@ bool MixFile::AddFile(const std::string &name)
 
     //open the file to add, if we can't open, bail and delete temp file
     std::fstream ifh;
-    Utf8Path::Open(ifh, name, std::ios::binary | std::ios::in);
+    ifh.open(std::filesystem::u8path(name), std::ios::binary | std::ios::in);
     if (!ifh.is_open())
     {
         std::println("Failed to open file to add");
@@ -693,8 +698,8 @@ bool MixFile::RemoveFile(int32_t id)
     }
 
     //open a temp file
-    Utf8Path::Open(
-        ofh, MixFileIo::TempFilePath,
+    ofh.open(
+        std::filesystem::u8path(MixFileIo::TempFilePath),
         std::ios::binary | std::ios::out | std::ios::trunc);
     if (!ofh.is_open())
     {
@@ -768,8 +773,8 @@ bool MixFile::RemoveChecksum()
         return false;
     }
 
-    Utf8Path::Open(
-        ofh, MixFileIo::TempFilePath,
+    ofh.open(
+        std::filesystem::u8path(MixFileIo::TempFilePath),
         std::ios::binary | std::ios::out | std::ios::trunc);
     if (!ofh.is_open())
     {
@@ -949,8 +954,8 @@ bool MixFile::Decrypt()
     uint32_t dataoffset = m_header.GetHeaderSize();
     m_header.ClearIsEncrypted();
 
-    Utf8Path::Open(
-        ofh, MixFileIo::TempFilePath,
+    ofh.open(
+        std::filesystem::u8path(MixFileIo::TempFilePath),
         std::fstream::out | std::fstream::binary | std::fstream::trunc);
     if (!m_header.WriteHeader(ofh))
     {
@@ -983,8 +988,8 @@ bool MixFile::Encrypt()
     uint32_t dataoffset = m_header.GetHeaderSize();
     m_header.SetIsEncrypted();
 
-    Utf8Path::Open(
-        ofh, MixFileIo::TempFilePath,
+    ofh.open(
+        std::filesystem::u8path(MixFileIo::TempFilePath),
         std::fstream::out | std::fstream::binary | std::fstream::trunc);
     if (!m_header.WriteHeader(ofh))
     {
@@ -1009,13 +1014,19 @@ bool MixFile::OverwriteOld(const std::string &temp)
 {
     Close();
 
-    if (!Utf8Path::Remove(m_file_path))
+    std::error_code error;
+    if (!std::filesystem::remove(std::filesystem::u8path(m_file_path), error) ||
+        error)
     {
         std::println("Failed to remove the original mix file");
         return false;
     }
 
-    if (!Utf8Path::Rename(temp, m_file_path))
+    error.clear();
+    std::filesystem::rename(
+        std::filesystem::u8path(temp), std::filesystem::u8path(m_file_path),
+        error);
+    if (error)
     {
         std::println("Failed to rename the temporary mix file");
         return false;

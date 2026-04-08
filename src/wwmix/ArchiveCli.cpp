@@ -1,22 +1,17 @@
 #include "ArchiveCli.hpp"
 
 #include "MixFile.hpp"
-#include "Utf8Path.hpp"
 
 #include <array>
 #include <charconv>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <print>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#ifndef _WIN32
-#include <pwd.h>
-#include <unistd.h>
-#endif
 
 namespace WwMix
 {
@@ -280,7 +275,9 @@ class ArchiveEnvironment
 
     static bool FileExists(const std::string &path)
     {
-        return Utf8Path::Exists(path);
+        std::error_code error;
+        return std::filesystem::exists(std::filesystem::u8path(path), error) &&
+               !error;
     }
 
 #ifdef _WIN32

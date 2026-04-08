@@ -1,6 +1,5 @@
 #include "MixGmd.hpp"
 #include "MixNumeric.hpp"
-#include "Utf8Path.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -24,20 +23,25 @@ struct GmdSourceInfo
 std::string NormalizePath(const std::string &path)
 {
     std::error_code error;
-    const fs::path absolutePath = fs::absolute(Utf8Path::FromUtf8(path), error);
+    const fs::path absolutePath = fs::absolute(fs::u8path(path), error);
     if (error)
     {
-        return Utf8Path::ToUtf8(Utf8Path::FromUtf8(path).lexically_normal());
+        const fs::path normalizedPath = fs::u8path(path).lexically_normal();
+        const std::u8string normalizedPathText = normalizedPath.u8string();
+        return std::string(
+            normalizedPathText.begin(), normalizedPathText.end());
     }
 
-    return Utf8Path::ToUtf8(absolutePath.lexically_normal());
+    const std::u8string normalizedPathText =
+        absolutePath.lexically_normal().u8string();
+    return std::string(normalizedPathText.begin(), normalizedPathText.end());
 }
 
 bool TryGetSourceInfo(const std::string &sourcePath, GmdSourceInfo &info)
 {
     const std::string normalizedPath = NormalizePath(sourcePath);
     std::error_code error;
-    const fs::path path = Utf8Path::FromUtf8(normalizedPath);
+    const fs::path path = fs::u8path(normalizedPath);
     const std::uintmax_t size = fs::file_size(path, error);
     if (error)
     {
@@ -125,7 +129,8 @@ bool MixGmd::Load(const std::string &sourcePath, const std::string &cachePath,
     }
 
     std::fstream sourceFile;
-    Utf8Path::Open(sourceFile, sourcePath, std::ios::in | std::ios::binary);
+    sourceFile.open(
+        fs::u8path(sourcePath), std::ios::in | std::ios::binary);
     if (sourceFile.is_open())
     {
         ReadDb(sourceFile);
@@ -170,7 +175,7 @@ bool MixGmd::WriteCache(const std::string &sourcePath,
     };
 
     std::ofstream cacheFile;
-    Utf8Path::Open(cacheFile, cachePath, std::ios::out | std::ios::trunc);
+    cacheFile.open(fs::u8path(cachePath), std::ios::out | std::ios::trunc);
     if (!cacheFile.is_open())
     {
         return false;
@@ -185,7 +190,7 @@ bool MixGmd::ReadCache(const std::string &sourcePath,
                        const bool allowStaleCache)
 {
     std::ifstream cacheFile;
-    Utf8Path::Open(cacheFile, cachePath, std::ios::in);
+    cacheFile.open(fs::u8path(cachePath), std::ios::in);
     if (!cacheFile.is_open())
     {
         return false;

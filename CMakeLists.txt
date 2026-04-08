@@ -4,14 +4,18 @@ if(POLICY CMP0091)
 endif()
 
 project(CCMIX)
-set(CCMIX_MAJOR "0")
-set(CCMIX_MINOR "1")
+set(CCMIX_MAJOR "1")
+set(CCMIX_MINOR "0")
 set(CCMIX_PATCH "0")
-set(VERSION "0.1.0")
+set(VERSION "1.0.0")
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/bin)
 
 set(CMAKE_MODULE_PATH ${CCMIX_SOURCE_DIR}/cmake/modules)
 set(CRYPTOPP_SUBMODULE_DIR ${CCMIX_SOURCE_DIR}/libs/cryptopp)
@@ -101,22 +105,10 @@ set(GMDEDIT_SRC
     ${PROJECT_SRC_DIR}/gmdedit/gmdedit.cpp 
    )
 
-set(WWMIX_SRC
-    ${PROJECT_SRC_DIR}/wwmix/ArchiveCli.cpp
-    ${PROJECT_SRC_DIR}/wwmix/main.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixGameDb.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixGmd.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixLmd.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixFile.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixHeader.cpp
-    ${PROJECT_SRC_DIR}/wwmix/MixId.cpp
-    ${PROJECT_SRC_DIR}/wwmix/Utf8Path.cpp
-    ${PROJECT_SRC_DIR}/wwmix/Application.cpp
-   )
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/bin)
+file(
+    GLOB_RECURSE WWMIX_SRC
+    ${PROJECT_SRC_DIR}/wwmix/*.cpp
+)
 
 add_executable(ccmix ${CCMIX_SRC} ${SHARED_SRC})
 if(TARGET cryptopp_build)
@@ -131,4 +123,8 @@ if(TARGET cryptopp_build)
   add_dependencies(wwmix cryptopp_build)
 endif()
 target_include_directories(wwmix PRIVATE ${CCMIX_SOURCE_DIR}/libs/json/include)
+if(MSVC)
+  target_compile_definitions(
+    wwmix PRIVATE _SILENCE_CXX20_U8PATH_DEPRECATION_WARNING)
+endif()
 target_link_libraries(wwmix cryptopp_dependency)
