@@ -1069,11 +1069,16 @@ bool MixFile::WriteChecksum(std::fstream &fh, int32_t pos)
 
 void MixFile::PrintFileList()
 {
+    std::println("{:>24} {:>10} {:>12} {:>12}",
+                 "Name", "ID(hex)", "Offset", "Size");
+    std::println("{:>24} {:>10} {:>12} {:>12}",
+                 "----", "-------", "------", "----");
+
     MixIndexIterator it = m_header.GetBegin();
     while (it != m_header.GetEnd())
     {
         const std::string fname = ResolveName(it->first);
-        std::println("{:>24}{:>10}{:>12}{:>12}",
+        std::println("{:>24} {:>10} {:>12} {:>12}",
                      fname, MixId::IdStr(it->first), it->second.offset, it->second.size);
         it++;
     }
