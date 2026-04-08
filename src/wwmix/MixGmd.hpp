@@ -26,6 +26,14 @@ class MixGmd
     /// @brief Write all game database sections to a stream.
     void WriteDb(std::fstream &fh);
 
+    /// @brief Load a global mix database, reusing a JSON cache when possible.
+    bool Load(const std::string &sourcePath, const std::string &cachePath,
+              bool allowStaleCache = false);
+
+    /// @brief Refresh the JSON cache from the in-memory database.
+    bool WriteCache(const std::string &sourcePath,
+                    const std::string &cachePath) const;
+
     /// @brief Resolve a file ID using the selected game's section.
     std::string GetName(Game game, int32_t id) const;
 
@@ -36,6 +44,10 @@ class MixGmd
     bool DeleteName(Game game, const std::string &name);
 
   private:
+    /// @brief Load the JSON cache when it is valid for the requested source.
+    bool ReadCache(const std::string &sourcePath, const std::string &cachePath,
+                   bool allowStaleCache);
+
     MixGameDb m_td_list;
     MixGameDb m_ra_list;
     MixGameDb m_ts_list;

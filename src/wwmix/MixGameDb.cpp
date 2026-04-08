@@ -1,5 +1,8 @@
 #include "MixGameDb.hpp"
 #include "MixId.hpp"
+
+#include <nlohmann/json.hpp>
+
 #include <cstring>
 #include <print>
 
@@ -57,6 +60,74 @@ void MixGameDb::WriteDb(std::fstream &fh)
         fh.write(it->second.name.c_str(), it->second.name.size() + 1);
         fh.write(it->second.description.c_str(), it->second.description.size() + 1);
     }
+}
+
+bool MixGameDb::ReadJson(const nlohmann::json &entries)
+{
+    if (!entries.is_array())
+    {
+        return false;
+    }
+
+    m_name_map.clear();
+    m_size = 4;
+    m_entries = 0;
+
+    for (const nlohmann::json &entry : entries)
+    {
+        if (!entry.is_object() ||
+            !entry.contains("name") ||
+            !entry.at("name").is_string() ||
+            !entry.contains("description") ||
+            !entry.at("description").is_string())
+        {
+            return false;
+        }
+
+        IdData idData = {
+            entry.at("name").get<std::string>(),
+            entry.at("description").get<std::string>()
+        };
+
+        const int32_t computedId = MixId::IdGen(m_game_type, idData.name);
+        if (entry.contains("id") &&
+            (!entry.at("id").is_number_integer() ||
+             entry.at("id").get<int32_t>() != computedId))
+        {
+            return false;
+        }
+
+        const auto [iterator, inserted] =
+            m_name_map.insert(IdPair(computedId, idData));
+        if (!inserted)
+        {
+            std::println("Cached GMD entry duplicates ID for {}",
+                         iterator->second.name);
+            return false;
+        }
+
+        m_size += idData.name.length() + 1;
+        m_size += idData.description.length() + 1;
+        ++m_entries;
+    }
+
+    return true;
+}
+
+nlohmann::json MixGameDb::WriteJson() const
+{
+    nlohmann::json entries = nlohmann::json::array();
+    for (IdIterator it = m_name_map.begin(); it != m_name_map.end(); ++it)
+    {
+        entries.push_back(
+            {
+                {"id", it->first},
+                {"name", it->second.name},
+                {"description", it->second.description}
+            });
+    }
+
+    return entries;
 }
 
 std::string MixGameDb::GetName(int32_t id) const

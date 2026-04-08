@@ -10,6 +10,7 @@
 
 #include <array>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -38,6 +39,15 @@ struct ApplicationContext
         }
 
         return ProgramName + " " + std::string(commandName);
+    }
+
+    std::string GmdCachePath() const
+    {
+        const std::filesystem::path programPath(ProgramPath);
+        const std::filesystem::path programDir =
+            programPath.has_parent_path() ? programPath.parent_path() :
+                                            std::filesystem::path(".");
+        return (programDir / "gmd.json").string();
     }
 };
 
@@ -269,16 +279,11 @@ class GmdCommand final : public Command
         }
 
         MixGmd gmd;
-        std::fstream inputFile(
-            state.InputPath, std::ios_base::in | std::ios_base::binary);
-        if (!inputFile.is_open())
+        if (!gmd.Load(state.InputPath, context.GmdCachePath(), false))
         {
             std::println("Failed to open global mix database: {}", state.InputPath);
             return 1;
         }
-
-        gmd.ReadDb(inputFile);
-        inputFile.close();
 
         const std::optional<NamePairs> additions = ReadAdditions(state.AdditionsPath);
         if (!additions.has_value())
@@ -306,6 +311,7 @@ class GmdCommand final : public Command
 
         gmd.WriteDb(outputFile);
         outputFile.close();
+        gmd.WriteCache(state.OutputPath, context.GmdCachePath());
 
         std::println("Wrote {} entries into the {} section of {}.",
                      additions->size(), GameCodec::Name(state.GameType),

@@ -36,7 +36,8 @@ class MixFile
   public:
     /// @brief Construct a mix-file controller with a global database and default game.
     MixFile(const std::string &gmd = "global mix database.dat",
-            Game openGame = Game::TD);
+            Game openGame = Game::TD,
+            const std::string &gmdCache = "");
 
     /// @brief Close any open archive state on destruction.
     virtual ~MixFile();

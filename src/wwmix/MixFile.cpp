@@ -204,7 +204,7 @@ std::string MixFile::BaseName(const std::string &pathname) const
     return std::filesystem::path(pathname).filename().string();
 }
 
-MixFile::MixFile(const std::string &gmd, Game game)
+MixFile::MixFile(const std::string &gmd, Game game, const std::string &gmdCache)
     : m_header(game),
       m_global_db(),
       m_local_db(game),
@@ -213,14 +213,8 @@ MixFile::MixFile(const std::string &gmd, Game game)
 {
     std::fill(m_checksum, m_checksum + 20, 0);
 
-    std::fstream gmdfile;
-    gmdfile.open(gmd.c_str(), std::fstream::in | std::fstream::binary);
-    if (gmdfile.is_open())
-    {
-        m_global_db.ReadDb(gmdfile);
-        gmdfile.close();
-    }
-    else
+    const std::string cachePath = gmdCache.empty() ? "gmd.json" : gmdCache;
+    if (!m_global_db.Load(gmd, cachePath, true))
     {
         std::println("Could not open global mix database.dat");
     }

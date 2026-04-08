@@ -10,6 +10,8 @@
 #include "MixNumeric.hpp"
 #include "MixId.hpp"
 
+#include <nlohmann/json_fwd.hpp>
+
 #include <cstddef>
 #include <string>
 #include <fstream>
@@ -28,6 +30,12 @@ class MixGameDb
 
     /// @brief Write the game database section to a binary stream.
     void WriteDb(std::fstream &fh);
+
+    /// @brief Load a game database section from cached JSON entries.
+    bool ReadJson(const nlohmann::json &entries);
+
+    /// @brief Serialize a game database section into cached JSON entries.
+    nlohmann::json WriteJson() const;
 
     /// @brief Resolve a file ID to its stored file name.
     std::string GetName(int32_t id) const;

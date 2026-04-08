@@ -234,6 +234,7 @@ class ArchiveEnvironment
     explicit ArchiveEnvironment(const std::string_view programPath)
         : m_programDir(GetProgramDir(programPath)),
           m_globalDbPath(FindGmd(m_programDir, GetHomeDir())),
+          m_globalDbCachePath(m_programDir + DirSeparator + "gmd.json"),
           m_keySourcePath(FindKeySource(m_programDir))
     {
     }
@@ -246,6 +247,11 @@ class ArchiveEnvironment
     const std::string &KeySourcePath() const
     {
         return m_keySourcePath;
+    }
+
+    const std::string &GlobalDbCachePath() const
+    {
+        return m_globalDbCachePath;
     }
 
   private:
@@ -368,6 +374,7 @@ class ArchiveEnvironment
 
     std::string m_programDir;
     std::string m_globalDbPath;
+    std::string m_globalDbCachePath;
     std::string m_keySourcePath;
 };
 
@@ -769,8 +776,11 @@ class ArchiveCommandParser
 class ArchiveCommandRunner
 {
   public:
-    ArchiveCommandRunner(std::string globalDbPath, std::string keySourcePath)
+    ArchiveCommandRunner(std::string globalDbPath,
+                         std::string globalDbCachePath,
+                         std::string keySourcePath)
         : m_globalDbPath(std::move(globalDbPath)),
+          m_globalDbCachePath(std::move(globalDbCachePath)),
           m_keySourcePath(std::move(keySourcePath))
     {
     }
@@ -844,7 +854,7 @@ class ArchiveCommandRunner
             return 1;
         }
 
-        MixFile inputFile(m_globalDbPath, options.GameType);
+        MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!inputFile.Open(options.ArchivePath))
         {
             std::println("Cannot open specified mix file");
@@ -879,7 +889,7 @@ class ArchiveCommandRunner
             !options.Directory.empty() ? options.Directory :
                                          ".";
 
-        MixFile outputFile(m_globalDbPath, options.GameType);
+        MixFile outputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!outputFile.CreateMix(options.ArchivePath, sourceDirectory,
                                   options.CreateLocalDb, options.EncryptHeader,
                                   options.AddChecksum, m_keySourcePath))
@@ -893,7 +903,7 @@ class ArchiveCommandRunner
 
     int RunAdd(const ArchiveCliOptions &options) const
     {
-        MixFile inputFile(m_globalDbPath, options.GameType);
+        MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!inputFile.Open(options.ArchivePath))
         {
             std::println("Cannot open specified mix file");
@@ -924,7 +934,7 @@ class ArchiveCommandRunner
 
     int RunRemove(const ArchiveCliOptions &options) const
     {
-        MixFile inputFile(m_globalDbPath, options.GameType);
+        MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!inputFile.Open(options.ArchivePath))
         {
             std::println("Cannot open specified mix file");
@@ -961,7 +971,7 @@ class ArchiveCommandRunner
             return 1;
         }
 
-        MixFile inputFile(m_globalDbPath, options.GameType);
+        MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!inputFile.Open(options.ArchivePath))
         {
             std::println("Cannot open specified mix file");
@@ -980,7 +990,7 @@ class ArchiveCommandRunner
             return 1;
         }
 
-        MixFile inputFile(m_globalDbPath, options.GameType);
+        MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
         if (!inputFile.Open(options.ArchivePath))
         {
             std::println("Cannot open specified mix file");
@@ -992,6 +1002,7 @@ class ArchiveCommandRunner
     }
 
     std::string m_globalDbPath;
+    std::string m_globalDbCachePath;
     std::string m_keySourcePath;
 };
 
@@ -1041,6 +1052,7 @@ int ArchiveCli::Run(const std::string_view programPath,
 
     const ArchiveEnvironment environment(programPath);
     ArchiveCommandRunner runner(environment.GlobalDbPath(),
+                                environment.GlobalDbCachePath(),
                                 environment.KeySourcePath());
     return runner.Run(options);
 }
