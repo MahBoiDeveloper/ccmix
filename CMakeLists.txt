@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
 
 project(CCMIX)
 set(CCMIX_MAJOR "0")
@@ -11,6 +14,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_MODULE_PATH ${CCMIX_SOURCE_DIR}/cmake/modules)
+set(CRYPTOPP_SUBMODULE_DIR ${CCMIX_SOURCE_DIR}/libs/cryptopp)
+
+if(MSVC)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr/local)
@@ -19,11 +27,43 @@ if(NOT DEFINED CMAKE_INSTALL_PREFIX)
   set(EASTWOOD_ROOTINSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
-find_package(Crypto++ REQUIRED)
-if(NOT CRYPTOPP_FOUND)
-  message(FATAL_ERROR "libcrypto++ not found")
+if(MSVC AND CMAKE_GENERATOR MATCHES "Visual Studio" AND EXISTS "${CRYPTOPP_SUBMODULE_DIR}/cryptlib.vcxproj")
+  message(STATUS "Using vendored Crypto++ from ${CRYPTOPP_SUBMODULE_DIR}")
+
+  file(TO_NATIVE_PATH "${CCMIX_BINARY_DIR}" CCMIX_BINARY_DIR_NATIVE)
+  set(CRYPTOPP_VS_CONFIGURATION "$<IF:$<CONFIG:Debug>,Debug,Release>")
+  set(CRYPTOPP_OUTPUT_DIR_NATIVE "${CCMIX_BINARY_DIR_NATIVE}\\lib\\$<CONFIG>\\")
+  set(CRYPTOPP_INTERMEDIATE_DIR_NATIVE "${CCMIX_BINARY_DIR_NATIVE}\\cryptopp\\${CMAKE_VS_PLATFORM_NAME}\\$<CONFIG>\\")
+
+  add_library(cryptopp_dependency STATIC IMPORTED GLOBAL)
+  set_target_properties(cryptopp_dependency PROPERTIES
+    IMPORTED_CONFIGURATIONS "Debug;Release;RelWithDebInfo;MinSizeRel"
+    IMPORTED_LOCATION_DEBUG "${CCMIX_BINARY_DIR}/lib/Debug/cryptlib.lib"
+    IMPORTED_LOCATION_RELEASE "${CCMIX_BINARY_DIR}/lib/Release/cryptlib.lib"
+    IMPORTED_LOCATION_RELWITHDEBINFO "${CCMIX_BINARY_DIR}/lib/RelWithDebInfo/cryptlib.lib"
+    IMPORTED_LOCATION_MINSIZEREL "${CCMIX_BINARY_DIR}/lib/MinSizeRel/cryptlib.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${CCMIX_SOURCE_DIR}/libs"
+  )
+
+  add_custom_target(cryptopp_build
+    COMMAND "${CMAKE_VS_MSBUILD_COMMAND}" "${CRYPTOPP_SUBMODULE_DIR}/cryptlib.vcxproj" /m
+      "/p:Configuration=${CRYPTOPP_VS_CONFIGURATION}"
+      "/p:Platform=${CMAKE_VS_PLATFORM_NAME}"
+      "/p:OutDir=${CRYPTOPP_OUTPUT_DIR_NATIVE}"
+      "/p:IntDir=${CRYPTOPP_INTERMEDIATE_DIR_NATIVE}"
+    WORKING_DIRECTORY "${CRYPTOPP_SUBMODULE_DIR}"
+    COMMENT "Building vendored Crypto++ static library"
+    VERBATIM
+  )
 else()
-  include_directories(${CRYPTOPP_INCLUDE_DIRS})
+  find_package(Crypto++ REQUIRED)
+  if(NOT CRYPTOPP_FOUND)
+    message(FATAL_ERROR "libcrypto++ not found")
+  endif()
+
+  add_library(cryptopp_dependency INTERFACE)
+  target_include_directories(cryptopp_dependency INTERFACE ${CRYPTOPP_INCLUDE_DIRS})
+  target_link_libraries(cryptopp_dependency INTERFACE ${CRYPTOPP_LIBRARIES})
 endif()
 
 #make binary relocatable if we used shared libs
@@ -39,14 +79,14 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${WARN_FLAGS} -fPIC ${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS_DEBUG "${WARN_FLAGS_DEBUG} -g -O0 ${CMAKE_CXX_FLAGS_DEBUG}")
 else()
-  set(CMAKE_C_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
-  set(CMAKE_C_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
-  set(CMAKE_C_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
-  set(CMAKE_CXX_FLAGS_DEBUG_INIT "/D_DEBUG /MTd /Zi /Ob0 /Od /RTC1")
-  set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/MT /O1 /Ob1 /D NDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/MT /O2 /Ob2 /D NDEBUG")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/MT /Zi /O2 /Ob1 /D NDEBUG")
+  set(CMAKE_C_FLAGS_DEBUG_INIT "/D_DEBUG /Zi /Ob0 /Od /RTC1")
+  set(CMAKE_C_FLAGS_MINSIZEREL_INIT     "/O1 /Ob1 /D NDEBUG")
+  set(CMAKE_C_FLAGS_RELEASE_INIT        "/O2 /Ob2 /D NDEBUG")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "/Zi /O2 /Ob1 /D NDEBUG")
+  set(CMAKE_CXX_FLAGS_DEBUG_INIT "/D_DEBUG /Zi /Ob0 /Od /RTC1")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT     "/O1 /Ob1 /D NDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE_INIT        "/O2 /Ob2 /D NDEBUG")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "/Zi /O2 /Ob1 /D NDEBUG")
 endif()
 
 set(SHARED_SRC
@@ -71,7 +111,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/bin)
 
 add_executable(ccmix ${CCMIX_SRC} ${SHARED_SRC})
-target_link_libraries(ccmix ${CRYPTOPP_LIBRARIES})
+if(TARGET cryptopp_build)
+  add_dependencies(ccmix cryptopp_build)
+endif()
+target_link_libraries(ccmix cryptopp_dependency)
 
 add_executable(gmdedit ${GMDEDIT_SRC} ${SHARED_SRC})
 target_link_libraries(gmdedit)

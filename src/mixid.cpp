@@ -1,5 +1,6 @@
 #include "mixid.hpp"
 #include <cstring>
+#include <cstddef>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -44,9 +45,9 @@ namespace MixId
         
         const char* marker = "[id]";
         
-        uint32_t DoBlock(const void* data, int size);
+        uint32_t DoBlock(const void* data, std::size_t size);
         
-        uint32_t DoBlock(const void* data, int size)
+        uint32_t DoBlock(const void* data, std::size_t size)
         {   
             uint32_t rv = 0;
             const uint8_t* r = reinterpret_cast<const uint8_t*>(data);
@@ -68,9 +69,9 @@ namespace MixId
         std::transform(fname.begin(), fname.end(), fname.begin(),
                 (int(*)(int)) toupper); // convert to uppercase
         if (game <= GameRa) { // for TD and RA
-            int i = 0;
+            std::size_t i = 0;
             uint32_t id = 0;
-            int l = fname.length(); // length of the filename
+            const std::size_t l = fname.length(); // length of the filename
             while (i < l) {
                 uint32_t a = 0;
                 for (int j = 0; j < 4; j++) {
@@ -83,11 +84,11 @@ namespace MixId
             }
             return id;
         } else { // for TS
-            const int l = fname.length();
-            int a = l >> 2;
+            const std::size_t l = fname.length();
+            const std::size_t a = l >> 2;
             if (l & 3) {
                 fname += static_cast<char> (l - (a << 2));
-                int i = 3 - (l & 3);
+                int i = static_cast<int>(3 - (l & 3));
                 while (i--)
                     fname += fname[a << 2];
             }
