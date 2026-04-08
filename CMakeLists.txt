@@ -101,6 +101,18 @@ set(GMDEDIT_SRC
     ${PROJECT_SRC_DIR}/gmdedit/gmdedit.cpp 
    )
 
+set(WWMIX_SRC
+    ${PROJECT_SRC_DIR}/wwmix/archive_cli.cpp
+    ${PROJECT_SRC_DIR}/wwmix/main.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_db_gamedb.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_db_gmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_db_lmd.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_file.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mix_header.cpp
+    ${PROJECT_SRC_DIR}/wwmix/mixid.cpp
+    ${PROJECT_SRC_DIR}/wwmix/wwmix.cpp
+   )
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/bin)
@@ -112,4 +124,9 @@ endif()
 target_link_libraries(ccmix cryptopp_dependency)
 
 add_executable(gmdedit ${GMDEDIT_SRC} ${SHARED_SRC})
-target_link_libraries(gmdedit)
+
+add_executable(wwmix ${WWMIX_SRC})
+if(TARGET cryptopp_build)
+  add_dependencies(wwmix cryptopp_build)
+endif()
+target_link_libraries(wwmix cryptopp_dependency)
