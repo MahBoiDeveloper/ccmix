@@ -6,11 +6,20 @@
  */
 
 #include "../mix_db_gmd.hpp"
+#include <fstream>
 #include <print>
 
 typedef std::pair<std::string, std::string> NamePair;
 Game game;
 std::vector<NamePair> names;
+
+namespace
+{
+void PrintUsage()
+{
+    std::println("Use: gmdedit gmdpath additionspath newgmdpath");
+}
+} // namespace
 
 /*
  * 
@@ -75,45 +84,85 @@ void Menu()
     } 
 }*/
 
-int main(int argc, char** argv) {
-    
+int main(int argc, char **argv)
+{
+
     MixGmd gmd;
     std::fstream ifh;
     std::fstream ofh;
     std::vector<NamePair> names;
-    
-    ifh.open(argv[1], std::ios_base::in|std::ios_base::binary);
+
+    if (argc < 4)
+    {
+        //Menu();
+        PrintUsage();
+        return 1;
+    }
+
+    ifh.open(argv[1], std::ios_base::in | std::ios_base::binary);
+    if (!ifh.is_open())
+    {
+        std::println("Failed to open global mix database: {}", argv[1]);
+        return 1;
+    }
+
     gmd.ReadDb(ifh);
     ifh.close();
-    
-    if(argc < 4){
-        //Menu();
-        std::print("Use: gmdedit gmdpath additionspath newgmdpath\n");
-        return 1;
-    } else {
-        game = GameTd;
-        
-        ifh.open(argv[2], std::ios_base::in);
 
-        while(!ifh.eof()){
-            NamePair entry;
-            std::getline(ifh, entry.first, ',');
-            std::getline(ifh, entry.second);
-            std::println("{} - {}", entry.first, entry.second);
-            if(entry.first != ""){
-                names.push_back(entry);
-            }
+    game = GameTd;
+
+    ifh.open(argv[2], std::ios_base::in);
+    if (!ifh.is_open())
+    {
+        std::println("Failed to open additions file: {}", argv[2]);
+        return 1;
+    }
+
+    for (std::string line; std::getline(ifh, line);)
+    {
+        if (line.empty())
+        {
+            continue;
+        }
+
+        const std::size_t separator = line.find(',');
+        NamePair entry;
+        if (separator == std::string::npos)
+        {
+            entry.first = line;
+        }
+        else
+        {
+            entry.first = line.substr(0, separator);
+            entry.second = line.substr(separator + 1);
+        }
+
+        std::println("{} - {}", entry.first, entry.second);
+        if (!entry.first.empty())
+        {
+            names.push_back(entry);
+        }
+    }
+    ifh.close();
+
+    for (std::size_t i = 0; i < names.size(); ++i)
+    {
+        if (!gmd.AddName(game, names[i].first, names[i].second))
+        {
+            std::println("Failed to add entry: {}", names[i].first);
+            return 1;
         }
     }
 
-    for(unsigned int i = 0; i < names.size(); i++) {
-        gmd.AddName(game, names[i].first, names[i].second);
+    ofh.open(argv[3], std::ios_base::out | std::ios_base::binary);
+    if (!ofh.is_open())
+    {
+        std::println("Failed to open output file: {}", argv[3]);
+        return 1;
     }
-    
-    ofh.open(argv[3], std::ios_base::out|std::ios_base::binary);
+
     gmd.WriteDb(ofh);
-    
+    ofh.close();
+
     return 0;
 }
-
-

@@ -25,39 +25,39 @@
  * 
  */
 
-
 /**
  * @brief mix file controller
  * 
  * Some parts of code and code are taken from XCC mix file specification.
  * @sa TS mix file format specification (http://xhp.xwis.net/documents/MIX_Format.html)
  */
-class MixFile {
-public:
-    MixFile(const std::string& gmd = "global mix database.dat" , 
+class MixFile
+{
+  public:
+    MixFile(const std::string &gmd = "global mix database.dat",
             Game openGame = GameTd);
     virtual ~MixFile();
     /// @brief Open a mix archive.
     /// @param path Mix file path.
     /// @retval true The file was opened.
     /// @retval false The file was not found.
-    bool Open(const std::string& path);
+    bool Open(const std::string &path);
     /// @brief Extract a file from the mix archive by CRC ID.
     /// @param fileID CRC ID of the file.
     /// @param outPath Extracted file path.
     /// @retval true The file was extracted.
     /// @retval false The file is not present in the archive.
-    bool ExtractFile(int32_t fileID, const std::string& outPath);
+    bool ExtractFile(int32_t fileID, const std::string &outPath);
     /// @brief Extract a file from the mix archive by file name.
     /// @param fileName Name of the file.
     /// @param outPath Extracted file path.
     /// @retval true The file was extracted.
     /// @retval false The file is not present in the archive.
-    bool ExtractFile(const std::string& fileName, const std::string& outPath);
+    bool ExtractFile(const std::string &fileName, const std::string &outPath);
     /// @brief Extract all files from the archive.
     /// @param outPath Output directory.
     /// @return `true` if extraction was successful.
-    bool ExtractAll(const std::string& outPath = ".");
+    bool ExtractAll(const std::string &outPath = ".");
     /// @brief Create a new mix file.
     /// @param fileName Name and path of the mix to create.
     /// @param in_dir Directory whose contents should be packed into the mix.
@@ -66,9 +66,9 @@ public:
     /// @param checksum Generate a checksum for the mix.
     /// @param key_src Path to a key source to use for encryption.
     /// @return `true` if creation was successful.
-    bool CreateMix(const std::string& fileName, const std::string& in_dir, bool with_lmd = false, 
-                   bool encrypted = false, bool checksum = false, 
-                   const std::string& key_src = "");
+    bool CreateMix(const std::string &fileName, const std::string &in_dir, bool with_lmd = false,
+                   bool encrypted = false, bool checksum = false,
+                   const std::string &key_src = "");
     /// @brief Add a SHA1 checksum to the end of the file and flag it in the header.
     /// @return `true` if the checksum was added successfully.
     bool AddChecksum();
@@ -78,11 +78,11 @@ public:
     /// @brief Add a file to the archive when it is not already present.
     /// @param name File name.
     /// @return `true` if the file was added successfully.
-    bool AddFile(const std::string& name);
+    bool AddFile(const std::string &name);
     /// @brief Remove a file from the archive by name when it is present.
     /// @param name File name.
     /// @return `true` if the file was removed successfully.
-    bool RemoveFile(const std::string& name);
+    bool RemoveFile(const std::string &name);
     /// @brief Remove a file from the archive by ID when it is present.
     /// @param id File ID.
     /// @return `true` if the file was removed successfully.
@@ -90,7 +90,7 @@ public:
     /// @brief Check whether a file name is present in the archive.
     /// @param name File name to test.
     /// @return `true` if the file is present.
-    bool CheckFileName(const std::string& name) const;
+    bool CheckFileName(const std::string &name) const;
     /// @brief Print the mix archive file list.
     /// Prints file CRC, file offset, and file size.
     void PrintFileList();
@@ -99,15 +99,16 @@ public:
     /// @brief Close the mix file.
     /// Prepare the object for opening another file.
     void Close();
-protected:
+
+  protected:
     typedef std::map<uint32_t, uint32_t> SkipMap;
     typedef std::pair<uint32_t, uint32_t> SkipEntry;
     typedef std::map<uint32_t, uint32_t>::const_iterator SkipMapIterator;
     bool WriteChecksum(std::fstream &fh, int32_t pos = 0);
-    std::string BaseName(const std::string& pathname) const;
+    std::string BaseName(const std::string &pathname) const;
     bool Decrypt();
     bool Encrypt();
-    bool OverwriteOld(const std::string& temp);
+    bool OverwriteOld(const std::string &temp);
     MixHeader m_header; // mix file header
     MixGmd m_global_db;
     MixLmd m_local_db;
@@ -117,5 +118,3 @@ protected:
     std::fstream fh; // file handler
     uint8_t m_checksum[20];
 };
-
-

@@ -10,8 +10,5 @@
 #include <cstdint>
 #include <cstring>
 
-
-void GetBlowfishKey(const uint8_t* s, uint8_t* d);
-void GiveBlowfishKey(const uint8_t* s, uint8_t* d);
-
-
+void GetBlowfishKey(const uint8_t *s, uint8_t *d);
+void GiveBlowfishKey(const uint8_t *s, uint8_t *d);

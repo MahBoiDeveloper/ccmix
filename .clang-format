@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+BreakBeforeBraces: Allman
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+ColumnLimit: 0
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ReflowComments: false
+SortIncludes: false

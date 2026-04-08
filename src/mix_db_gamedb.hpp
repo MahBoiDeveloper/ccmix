@@ -19,29 +19,35 @@
 //each handled game has its own DB internally
 class MixGameDb
 {
-public:
+  public:
     MixGameDb(Game game);
-    void ReadDb(const char* data, uint32_t offset);
+    void ReadDb(const char *data, uint32_t offset);
     void WriteDb(std::fstream &fh);
     std::string GetName(int32_t id) const;
-    bool AddName(const std::string& name, const std::string& description);
-    bool DeleteName(const std::string& name);
-    Game GetGame() const { return m_game_type; }
-    uint32_t GetSize() const { return MixNumeric::ToUint32(m_size, "global database size"); }
-    
-private:
-    struct IdData {
+    bool AddName(const std::string &name, const std::string &description);
+    bool DeleteName(const std::string &name);
+    Game GetGame() const
+    {
+        return m_game_type;
+    }
+    uint32_t GetSize() const
+    {
+        return MixNumeric::ToUint32(m_size, "global database size");
+    }
+
+  private:
+    struct IdData
+    {
         std::string name;
         std::string description;
     };
-    
+
     typedef std::map<int32_t, IdData> IdMap;
     typedef std::pair<int32_t, IdData> IdPair;
     typedef std::map<int32_t, IdData>::const_iterator IdIterator;
-    
+
     IdMap m_name_map;
     std::size_t m_size;
     uint32_t m_entries;
     Game m_game_type;
 };
-

@@ -15,8 +15,8 @@
 
 struct IndexInfo
 {
-    uint32_t offset;    // offset from start of body
-    uint32_t size;      // size of this internal file
+    uint32_t offset; // offset from start of body
+    uint32_t size;   // size of this internal file
 };
 
 typedef std::map<int32_t, IndexInfo> MixIndex;
@@ -55,7 +55,6 @@ typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
  * size of all files.
  */
 
-
 /**
  * @brief Included file header.
  * 
@@ -82,7 +81,7 @@ typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
 
 class MixHeader
 {
-public:
+  public:
     MixHeader(Game game);
     bool ReadHeader(std::fstream &fh);
     bool ReadKeySource(std::fstream &fh);
@@ -90,30 +89,63 @@ public:
     bool AddEntry(int32_t id, uint32_t size);
     bool RemoveEntry(int32_t id, bool adjust);
     IndexInfo GetEntry(int32_t id) const;
-    bool GetHasChecksum() const { return m_has_checksum; }
+    bool GetHasChecksum() const
+    {
+        return m_has_checksum;
+    }
     void SetHasChecksum();
     void ClearHasChecksum();
-    bool GetIsEncrypted() const { return m_is_encrypted; }
+    bool GetIsEncrypted() const
+    {
+        return m_is_encrypted;
+    }
     void SetIsEncrypted();
     void ClearIsEncrypted();
-    Game GetGame() const { return m_game_type; }
+    Game GetGame() const
+    {
+        return m_game_type;
+    }
     //void printContents();
-    
-    uint32_t GetHeaderSize() const { return m_header_size; }
-    uint32_t GetBodySize() const { return m_body_size; }
-    void SetBodySize(uint32_t size) { m_body_size = size; }
-    uint16_t GetFileCount() const { return m_file_count; }
-    MixIndexIterator GetBegin() { return m_index.begin(); }
-    MixIndexIterator GetEnd() { return m_index.end(); }
-    const char* GetKey() const { return m_key; }
-    const char* GetKeySource() const { return m_keysource; }
-    
-private:
+
+    uint32_t GetHeaderSize() const
+    {
+        return m_header_size;
+    }
+    uint32_t GetBodySize() const
+    {
+        return m_body_size;
+    }
+    void SetBodySize(uint32_t size)
+    {
+        m_body_size = size;
+    }
+    uint16_t GetFileCount() const
+    {
+        return m_file_count;
+    }
+    MixIndexIterator GetBegin()
+    {
+        return m_index.begin();
+    }
+    MixIndexIterator GetEnd()
+    {
+        return m_index.end();
+    }
+    const char *GetKey() const
+    {
+        return m_key;
+    }
+    const char *GetKeySource() const
+    {
+        return m_keysource;
+    }
+
+  private:
     void SetKey();
     void SetKeySource();
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
-    
+
     Game m_game_type;
     uint16_t m_file_count;
     uint32_t m_body_size;
@@ -125,7 +157,7 @@ private:
     MixIndex m_old_index;
     char m_keysource[80];
     char m_key[56];
-    
+
     void Reset();
     bool ReadEncrypted(std::fstream &fh);
     bool WriteEncrypted(std::fstream &fh);
@@ -133,5 +165,3 @@ private:
     bool WriteUnencrypted(std::fstream &fh);
     //void setGame(Game game); //{ m_game_type = game; }
 };
-
-

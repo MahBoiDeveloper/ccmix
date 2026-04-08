@@ -12,150 +12,167 @@ using CryptoPP::SHA1;
 
 namespace
 {
-    namespace fs = std::filesystem;
+namespace fs = std::filesystem;
 
-    const char* const TempFilePath = "~ccmix.tmp";
-    const std::streamsize CopyBufferSize = 32 * 1024;
+const char *const TempFilePath = "~ccmix.tmp";
+const std::streamsize CopyBufferSize = 32 * 1024;
 
-    std::string JoinPath(const std::string& directory, const std::string& name)
-    {
-        return (fs::path(directory) / name).string();
-    }
-
-    bool TryGetRegularFileSize(const fs::path& path, uint32_t& size)
-    {
-        std::error_code error;
-        if (!fs::is_regular_file(path, error) || error) {
-            return false;
-        }
-
-        const std::uintmax_t fileSize = fs::file_size(path, error);
-        if (error || fileSize > std::numeric_limits<uint32_t>::max()) {
-            return false;
-        }
-
-        size = static_cast<uint32_t>(fileSize);
-        return true;
-    }
-
-    std::streamoff GetStreamSize(std::istream& stream)
-    {
-        stream.clear();
-        stream.seekg(0, std::ios::end);
-        const std::streamoff size = stream.tellg();
-        stream.seekg(0, std::ios::beg);
-        return size;
-    }
-
-    bool CopyExact(std::istream& input, std::ostream& output, std::streamoff size)
-    {
-        if (size <= 0) {
-            return true;
-        }
-
-        std::vector<char> buffer(CopyBufferSize);
-        std::streamoff remaining = size;
-
-        while (remaining > 0) {
-            const std::streamsize chunk = static_cast<std::streamsize>(
-                    std::min<std::streamoff>(remaining, CopyBufferSize));
-            input.read(&buffer.at(0), chunk);
-            const std::streamsize read = input.gcount();
-
-            if (read <= 0) {
-                return false;
-            }
-
-            output.write(&buffer.at(0), read);
-            if (!output) {
-                return false;
-            }
-
-            remaining -= read;
-        }
-
-        return true;
-    }
-
-    bool CopyToEnd(std::istream& input, std::ostream& output)
-    {
-        std::vector<char> buffer(CopyBufferSize);
-
-        while (input.good()) {
-            input.read(&buffer.at(0), CopyBufferSize);
-            const std::streamsize read = input.gcount();
-            if (read > 0) {
-                output.write(&buffer.at(0), read);
-                if (!output) {
-                    return false;
-                }
-            }
-        }
-
-        const bool reached_eof = input.eof();
-        input.clear();
-        return reached_eof && output.good();
-    }
-
-    bool CopyBodyWithSkips(std::istream& input, std::ostream& output,
-            std::streamoff body_offset, std::streamoff body_end,
-            const std::map<uint32_t, uint32_t>& skips)
-    {
-        input.clear();
-        input.seekg(body_offset, std::ios::beg);
-        if (!input) {
-            return false;
-        }
-
-        std::streamoff current = body_offset;
-        for (std::map<uint32_t, uint32_t>::const_iterator it = skips.begin();
-             it != skips.end(); ++it) {
-            const std::streamoff skip_begin = body_offset + it->first;
-            if (skip_begin > current && !CopyExact(input, output, skip_begin - current)) {
-                return false;
-            }
-
-            current = skip_begin + it->second;
-            input.clear();
-            input.seekg(current, std::ios::beg);
-            if (!input) {
-                return false;
-            }
-        }
-
-        if (body_end > current) {
-            return CopyExact(input, output, body_end - current);
-        }
-
-        return true;
-    }
-
-    void RemoveTempFile()
-    {
-        std::remove(TempFilePath);
-    }
+std::string JoinPath(const std::string &directory, const std::string &name)
+{
+    return (fs::path(directory) / name).string();
 }
 
-std::string MixFile::BaseName(const std::string& pathname) const
+bool TryGetRegularFileSize(const fs::path &path, uint32_t &size)
+{
+    std::error_code error;
+    if (!fs::is_regular_file(path, error) || error)
+    {
+        return false;
+    }
+
+    const std::uintmax_t fileSize = fs::file_size(path, error);
+    if (error || fileSize > std::numeric_limits<uint32_t>::max())
+    {
+        return false;
+    }
+
+    size = static_cast<uint32_t>(fileSize);
+    return true;
+}
+
+std::streamoff GetStreamSize(std::istream &stream)
+{
+    stream.clear();
+    stream.seekg(0, std::ios::end);
+    const std::streamoff size = stream.tellg();
+    stream.seekg(0, std::ios::beg);
+    return size;
+}
+
+bool CopyExact(std::istream &input, std::ostream &output, std::streamoff size)
+{
+    if (size <= 0)
+    {
+        return true;
+    }
+
+    std::vector<char> buffer(CopyBufferSize);
+    std::streamoff remaining = size;
+
+    while (remaining > 0)
+    {
+        const std::streamsize chunk = static_cast<std::streamsize>(
+            std::min<std::streamoff>(remaining, CopyBufferSize));
+        input.read(&buffer.at(0), chunk);
+        const std::streamsize read = input.gcount();
+
+        if (read <= 0)
+        {
+            return false;
+        }
+
+        output.write(&buffer.at(0), read);
+        if (!output)
+        {
+            return false;
+        }
+
+        remaining -= read;
+    }
+
+    return true;
+}
+
+bool CopyToEnd(std::istream &input, std::ostream &output)
+{
+    std::vector<char> buffer(CopyBufferSize);
+
+    while (input.good())
+    {
+        input.read(&buffer.at(0), CopyBufferSize);
+        const std::streamsize read = input.gcount();
+        if (read > 0)
+        {
+            output.write(&buffer.at(0), read);
+            if (!output)
+            {
+                return false;
+            }
+        }
+    }
+
+    const bool reached_eof = input.eof();
+    input.clear();
+    return reached_eof && output.good();
+}
+
+bool CopyBodyWithSkips(std::istream &input, std::ostream &output,
+                       std::streamoff body_offset, std::streamoff body_end,
+                       const std::map<uint32_t, uint32_t> &skips)
+{
+    input.clear();
+    input.seekg(body_offset, std::ios::beg);
+    if (!input)
+    {
+        return false;
+    }
+
+    std::streamoff current = body_offset;
+    for (std::map<uint32_t, uint32_t>::const_iterator it = skips.begin();
+         it != skips.end(); ++it)
+    {
+        const std::streamoff skip_begin = body_offset + it->first;
+        if (skip_begin > current && !CopyExact(input, output, skip_begin - current))
+        {
+            return false;
+        }
+
+        current = skip_begin + it->second;
+        input.clear();
+        input.seekg(current, std::ios::beg);
+        if (!input)
+        {
+            return false;
+        }
+    }
+
+    if (body_end > current)
+    {
+        return CopyExact(input, output, body_end - current);
+    }
+
+    return true;
+}
+
+void RemoveTempFile()
+{
+    std::remove(TempFilePath);
+}
+} // namespace
+
+std::string MixFile::BaseName(const std::string &pathname) const
 {
     return fs::path(pathname).filename().string();
 }
 
-MixFile::MixFile(const std::string& gmd, Game game) :
-m_header(game),
-m_global_db(),
-m_local_db(game),
-m_has_lmd(false),
-m_file_path()
+MixFile::MixFile(const std::string &gmd, Game game)
+    : m_header(game),
+      m_global_db(),
+      m_local_db(game),
+      m_has_lmd(false),
+      m_file_path()
 {
     std::fill(m_checksum, m_checksum + 20, 0);
 
     std::fstream gmdfile;
     gmdfile.open(gmd.c_str(), std::fstream::in | std::fstream::binary);
-    if(gmdfile.is_open()){
+    if (gmdfile.is_open())
+    {
         m_global_db.ReadDb(gmdfile);
         gmdfile.close();
-    } else {
+    }
+    else
+    {
         std::println("Could not open global mix database.dat");
     }
 }
@@ -165,102 +182,115 @@ MixFile::~MixFile()
     Close();
 }
 
-bool MixFile::Open(const std::string& path)
+bool MixFile::Open(const std::string &path)
 {
     IndexInfo lmd;
     m_file_path = path;
     m_has_lmd = false;
     std::fill(m_checksum, m_checksum + 20, 0);
-    
-    if (fh.is_open()) {
+
+    if (fh.is_open())
+    {
         Close();
     }
-    
+
     fh.open(path.c_str(), std::fstream::in | std::fstream::out | std::fstream::binary);
-    if (!fh.is_open()) {
+    if (!fh.is_open())
+    {
         std::println("File {} failed to open", path);
         return false;
     }
-    
+
     const std::streamoff fsize = GetStreamSize(fh);
-    
-    if (!m_header.ReadHeader(fh)) {
+
+    if (!m_header.ReadHeader(fh))
+    {
         Close();
         return false;
     }
-    
-    if (fsize < static_cast<std::streamoff>(m_header.GetHeaderSize())) {
+
+    if (fsize < static_cast<std::streamoff>(m_header.GetHeaderSize()))
+    {
         Close();
         return false;
     }
 
     const std::streamoff available_body = fsize - m_header.GetHeaderSize();
-    if (m_header.GetBodySize() >= available_body) {
+    if (m_header.GetBodySize() >= available_body)
+    {
         m_header.SetBodySize(static_cast<uint32_t>(available_body));
     }
-    
-    if (m_header.GetHasChecksum()) {
+
+    if (m_header.GetHasChecksum())
+    {
         fh.seekg(-20, std::ios::end);
-        fh.read(reinterpret_cast<char*>(m_checksum), 20);
+        fh.read(reinterpret_cast<char *>(m_checksum), 20);
     }
-    
+
     //check if we have a local mix db and if its sane-ish
     lmd = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()));
-    if (lmd.size < m_header.GetBodySize()) {
+    if (lmd.size < m_header.GetBodySize())
+    {
         m_local_db.ReadDb(fh, lmd.offset + m_header.GetHeaderSize(), lmd.size);
         m_has_lmd = true;
     }
-    
+
     return true;
 }
 
-bool MixFile::CheckFileName(const std::string& name) const
+bool MixFile::CheckFileName(const std::string &name) const
 {
     IndexInfo rv = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), name));
     //size of a valid name will be > 0 hence true;
     return rv.size != 0;
 }
 
-bool MixFile::ExtractAll(const std::string& outPath) 
+bool MixFile::ExtractAll(const std::string &outPath)
 {
     std::string fname;
     bool rv = true;
-            
-    for(MixIndexIterator it = m_header.GetBegin(); it != m_header.GetEnd(); it++) {
-        
+
+    for (MixIndexIterator it = m_header.GetBegin(); it != m_header.GetEnd(); it++)
+    {
+
         fname = m_local_db.GetName(it->first);
-        
-        if(fname.substr(0, 4) == "[id]") {
+
+        if (fname.substr(0, 4) == "[id]")
+        {
             fname = m_global_db.GetName(m_header.GetGame(), it->first);
         }
-        
-        if (it->second.size <= m_header.GetBodySize()) {
+
+        if (it->second.size <= m_header.GetBodySize())
+        {
             rv = ExtractFile(it->first, JoinPath(outPath, fname)) && rv;
         }
     }
-    
+
     return rv;
 }
 
-bool MixFile::ExtractFile(int32_t id, const std::string& out) 
+bool MixFile::ExtractFile(int32_t id, const std::string &out)
 {
     IndexInfo entry;
 
     // find file index entry
     entry = m_header.GetEntry(id);
-    
-    if(entry.size) {
+
+    if (entry.size)
+    {
         std::vector<char> buffer(entry.size);
         fh.clear();
         fh.seekg(m_header.GetHeaderSize() + entry.offset);
         fh.read(&buffer.at(0), entry.size);
-        if (static_cast<uint32_t>(fh.gcount()) != entry.size) {
+        if (static_cast<uint32_t>(fh.gcount()) != entry.size)
+        {
             fh.clear();
             return false;
         }
 
         std::ofstream of(out.c_str(), std::ios_base::binary);
-        if (!of.is_open()) {
+        if (!of.is_open())
+        {
             return false;
         }
         of.write(&buffer.at(0), entry.size);
@@ -269,82 +299,91 @@ bool MixFile::ExtractFile(int32_t id, const std::string& out)
 
         return of.good();
     }
-    
+
     return false;
 }
 
-bool MixFile::ExtractFile(const std::string& filename, const std::string& outpath) 
+bool MixFile::ExtractFile(const std::string &filename, const std::string &outpath)
 {
     return ExtractFile(MixId::IdGen(m_header.GetGame(), filename), outpath);
 }
 
-bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir, 
-                        bool with_lmd, bool encrypted, bool checksum, 
-                        const std::string& key_src) 
+bool MixFile::CreateMix(const std::string &fileName, const std::string &in_dir,
+                        bool with_lmd, bool encrypted, bool checksum,
+                        const std::string &key_src)
 {
     (void)key_src;
 
     std::vector<std::string> filenames; // file names
-    
-    if(encrypted) m_header.SetIsEncrypted();
-    if(checksum) m_header.SetHasChecksum();
-    
+
+    if (encrypted)
+        m_header.SetIsEncrypted();
+    if (checksum)
+        m_header.SetHasChecksum();
+
     //cout << "Game we are building for is " << m_header.GetGame() << endl;
     /*if(m_header.GetIsEncrypted()){
         cout << "Header will be encrypted." << endl;
     }*/
-    
+
     //make sure we can iterate the directory
     const fs::path inputDirectory(in_dir);
     std::error_code directoryError;
     fs::directory_iterator iterator(inputDirectory, directoryError);
-    if(directoryError) {
+    if (directoryError)
+    {
         std::println("Error opening {}", in_dir);
         return false;
     }
-    
+
     //iterate through entries in directory, ignoring directories
-    for (fs::directory_iterator end; iterator != end; iterator.increment(directoryError)) {
-        if (directoryError) {
+    for (fs::directory_iterator end; iterator != end; iterator.increment(directoryError))
+    {
+        if (directoryError)
+        {
             std::println("Error opening {}", in_dir);
             return false;
         }
 
-        const fs::directory_entry& directoryEntry = *iterator;
+        const fs::directory_entry &directoryEntry = *iterator;
         uint32_t fileSize = 0;
-        if(TryGetRegularFileSize(directoryEntry.path(), fileSize)){
+        if (TryGetRegularFileSize(directoryEntry.path(), fileSize))
+        {
             const std::string filename = directoryEntry.path().filename().string();
-            
+
             //check if we have an ID containing file name, if not add to localdb
-            if(!MixId::IsIdName(filename)){
-                if(!m_local_db.AddName(filename)) {
+            if (!MixId::IsIdName(filename))
+            {
+                if (!m_local_db.AddName(filename))
+                {
                     std::println("Skipping {}, ID Collision", filename);
                     continue;
                 }
             }
-            
+
             //try adding entry to header, skip if failed
-            if(!m_header.AddEntry(MixId::IdGen(m_header.GetGame(), 
-                                  filename), 
-                                  fileSize)) {
+            if (!m_header.AddEntry(MixId::IdGen(m_header.GetGame(),
+                                                filename),
+                                   fileSize))
+            {
                 continue;
             }
-            
+
             //finally add the filename to the list of files we will add
             filenames.push_back(filename);
         }
-        
     }
-    
+
     //are we wanting lmd? if so push header info for it here
-    if(with_lmd){
+    if (with_lmd)
+    {
         filenames.push_back(m_local_db.GetDbName());
-        m_header.AddEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()), 
+        m_header.AddEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()),
                           m_local_db.GetSize());
     }
-    
+
     //cout << m_header.GetBodySize() << " files, total size " << m_header.GetFileCount() << " before writing header" << endl;
-    
+
     //if we are encrypted, get a key source
     /*
     if(m_header.GetIsEncrypted()){
@@ -359,174 +398,196 @@ bool MixFile::CreateMix(const std::string& fileName, const std::string& in_dir,
         ifile.close();
     }
     */
-    
+
     //time to start writing our new file
     fh.open(fileName.c_str(), std::fstream::in | std::fstream::out |
-            std::fstream::binary | std::fstream::trunc);
-    
-    if(!fh.is_open()){
+                                  std::fstream::binary | std::fstream::trunc);
+
+    if (!fh.is_open())
+    {
         std::println("Failed to create empty file");
         return false;
     }
-    
+
     //write a header
-    if(!m_header.WriteHeader(fh)) {
+    if (!m_header.WriteHeader(fh))
+    {
         std::println("Failed to write header.");
         return false;
     }
-    
+
     //cout << "Writing the body now" << endl;
-    
+
     std::println("Writing {} files.", filenames.size());
-    
+
     //write the body, offset is set in header based on when added so should match
-    for(unsigned int i = 0; i < filenames.size(); i++){
+    for (unsigned int i = 0; i < filenames.size(); i++)
+    {
         //last entry is lmd if with_lmd so break for special handling
-        if(with_lmd && i == filenames.size() - 1) break;
-        
+        if (with_lmd && i == filenames.size() - 1)
+            break;
+
         const std::string input_path = JoinPath(in_dir, filenames[i]);
         std::println("{}", input_path);
         std::fstream ifile(input_path.c_str(), std::fstream::in | std::fstream::binary);
-        if(!ifile.is_open()) {
+        if (!ifile.is_open())
+        {
             std::println("Could not open input file {}", filenames[i]);
             return false;
         }
-        if (!CopyToEnd(ifile, fh)) {
+        if (!CopyToEnd(ifile, fh))
+        {
             return false;
         }
     }
-    
+
     //handle lmd writing here.
-    if(with_lmd){
+    if (with_lmd)
+    {
         m_local_db.WriteDb(fh);
     }
-    
+
     //just write the checksum, flag is set further up
-    if(m_header.GetHasChecksum()){
-        if (!WriteChecksum(fh)) {
+    if (m_header.GetHasChecksum())
+    {
+        if (!WriteChecksum(fh))
+        {
             fh.close();
             return false;
         }
     }
-    
+
     //cout << "Offset to data is " << m_header.GetHeaderSize() << endl;
-    
+
     fh.close();
-    
+
     return true;
 }
 
-bool MixFile::AddFile(const std::string& name)
+bool MixFile::AddFile(const std::string &name)
 {
     std::fstream ofh;
     IndexInfo lmd;
     IndexInfo old;
-    
+
     m_skip.clear();
-    
+
     //get filename without path info
     const std::string basename = BaseName(name);
-    
+
     std::println("Adding {}", basename);
-    
+
     //save the old data offset from header before we started changing it.
     const std::streamoff old_offset = m_header.GetHeaderSize();
     const std::streamoff old_size = old_offset + m_header.GetBodySize();
-    
+
     lmd = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()));
-    old = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), basename)); 
-    
+    old = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), basename));
+
     //add skip entry for lmd if we have one and remove from header
-    if(lmd.size) {
+    if (lmd.size)
+    {
         m_skip[lmd.offset] = lmd.size;
-        m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(), 
-                             m_local_db.GetDbName()), true);
+        m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(),
+                                          m_local_db.GetDbName()),
+                             true);
     }
-    
+
     //setup to skip over the file if it is replacing
-    if(old.size) {
+    if (old.size)
+    {
         m_skip[old.offset] = old.size;
         m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(), basename), true);
         std::println("A file with the same ID exists and will be replaced.");
     }
-    
+
     //stat file to add and check its not a directory
     uint32_t fileSize = 0;
-    if(!TryGetRegularFileSize(name, fileSize)){
+    if (!TryGetRegularFileSize(name, fileSize))
+    {
         std::println("Cannot add directory as a file");
         return false;
     }
 
-    if (!old.size && !MixId::IsIdName(basename) && !m_local_db.AddName(basename)) {
+    if (!old.size && !MixId::IsIdName(basename) && !m_local_db.AddName(basename))
+    {
         return false;
     }
     m_header.AddEntry(MixId::IdGen(m_header.GetGame(), basename), fileSize);
-    
+
     //if the lmd had a size before (thus existed), add it back to header now
-    if(lmd.size) {
+    if (lmd.size)
+    {
         m_header.AddEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()),
                           m_local_db.GetSize());
     }
-    
+
     //open a temp file
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
-    if(!ofh.is_open()){
+    if (!ofh.is_open())
+    {
         std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
-    
+
     //write our new header
-    if (!m_header.WriteHeader(ofh)) {
+    if (!m_header.WriteHeader(ofh))
+    {
         return false;
     }
-    
+
     //copy the body of the old mix, skipping the old lmd and replaced file
-    if (!CopyBodyWithSkips(fh, ofh, old_offset, old_size, m_skip)) {
+    if (!CopyBodyWithSkips(fh, ofh, old_offset, old_size, m_skip))
+    {
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     //open the file to add, if we can't open, bail and delete temp file
     std::fstream ifh(name.c_str(), std::ios::binary | std::ios::in);
-    if(!ifh.is_open()){
+    if (!ifh.is_open())
+    {
         std::println("Failed to open file to add");
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     //add new file to mix body
-    if (!CopyExact(ifh, ofh, fileSize)) {
+    if (!CopyExact(ifh, ofh, fileSize))
+    {
         ifh.close();
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     ifh.close();
-    
+
     //write lmd if needed
-    if(lmd.size){
+    if (lmd.size)
+    {
         m_local_db.WriteDb(ofh);
     }
-    
+
     //write checksum to end of file if required.
-    if(m_header.GetHasChecksum()){
-        if (!WriteChecksum(ofh, 0)) {
+    if (m_header.GetHasChecksum())
+    {
+        if (!WriteChecksum(ofh, 0))
+        {
             ofh.close();
             RemoveTempFile();
             return false;
         }
     }
-    
+
     //Replace the old file with our new one.
     ofh.close();
     return OverwriteOld(TempFilePath);
-    
 }
 
-bool MixFile::RemoveFile(const std::string& name)
+bool MixFile::RemoveFile(const std::string &name)
 {
     return RemoveFile(MixId::IdGen(m_header.GetGame(), BaseName(name)));
 }
@@ -536,71 +597,81 @@ bool MixFile::RemoveFile(int32_t id)
     IndexInfo lmd;
     IndexInfo rem;
     std::fstream ofh;
-    
+
     //empty the skip map
     m_skip.clear();
-    
+
     //save the old data offset from header before we started changing it.
     const std::streamoff old_offset = m_header.GetHeaderSize();
     const std::streamoff old_size = old_offset + m_header.GetBodySize();
-    
+
     //set up to skip copying the lmd if the mix contains one
     lmd = m_header.GetEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()));
     rem = m_header.GetEntry(id);
-    
-    if(!rem.size) return false;
-            
+
+    if (!rem.size)
+        return false;
+
     //add skip entry for lmd if we have one and remove from header
-    if(lmd.size) {
+    if (lmd.size)
+    {
         m_skip[lmd.offset] = lmd.size;
-        m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(), 
-                             m_local_db.GetDbName()), true);
+        m_header.RemoveEntry(MixId::IdGen(m_header.GetGame(),
+                                          m_local_db.GetDbName()),
+                             true);
     }
-    
+
     //add our file to the skip map and remove it
     m_skip[rem.offset] = rem.size;
     m_header.RemoveEntry(id, true);
     m_local_db.DeleteName(id);
-    
+
     //re-add our lmd entry if we had one will recalc its position
-    if(lmd.size) {
+    if (lmd.size)
+    {
         m_header.AddEntry(MixId::IdGen(m_header.GetGame(), m_local_db.GetDbName()),
                           m_local_db.GetSize());
     }
-    
+
     //open a temp file
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
-    if(!ofh.is_open()){
+    if (!ofh.is_open())
+    {
         std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
-    
+
     //write our new header
-    if (!m_header.WriteHeader(ofh)) {
+    if (!m_header.WriteHeader(ofh))
+    {
         return false;
     }
-    
+
     //copy the body of the old mix, skipping files in m_skip
-    if (!CopyBodyWithSkips(fh, ofh, old_offset, old_size, m_skip)) {
+    if (!CopyBodyWithSkips(fh, ofh, old_offset, old_size, m_skip))
+    {
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     //write lmd if needed
-    if(lmd.size){
+    if (lmd.size)
+    {
         m_local_db.WriteDb(ofh);
     }
-    
+
     //write checksum to end of file if required. will have to overwrite old one
-    if(m_header.GetHasChecksum()){
-        if (!WriteChecksum(ofh, 0)) {
+    if (m_header.GetHasChecksum())
+    {
+        if (!WriteChecksum(ofh, 0))
+        {
             ofh.close();
             RemoveTempFile();
             return false;
         }
     }
-    
+
     ofh.close();
     return OverwriteOld(TempFilePath);
 }
@@ -608,215 +679,235 @@ bool MixFile::RemoveFile(int32_t id)
 bool MixFile::AddChecksum()
 {
     //check if we think this file is checksummed already
-    if(m_header.GetHasChecksum()){
+    if (m_header.GetHasChecksum())
+    {
         std::println("File is already flagged as having a checksum");
         return false;
     }
-    
+
     //toggle flag for checksum and then write it
     m_header.SetHasChecksum();
     fh.seekp(0, std::ios::beg);
     m_header.WriteHeader(fh);
-    
+
     //write the actual checksum
     return WriteChecksum(fh);
-    
 }
 
 bool MixFile::RemoveChecksum()
 {
     std::fstream ofh;
     const std::streamoff old_offset = m_header.GetHeaderSize();
-    const std::streamoff old_size = old_offset + m_header.GetBodySize(); 
-    
+    const std::streamoff old_size = old_offset + m_header.GetBodySize();
+
     //check if we think this file is checksummed already
-    if(!m_header.GetHasChecksum()){
+    if (!m_header.GetHasChecksum())
+    {
         std::println("File is already flagged as not having a checksum");
         return false;
     }
-    
+
     ofh.open(TempFilePath, std::ios::binary | std::ios::out | std::ios::trunc);
-    if(!ofh.is_open()){
+    if (!ofh.is_open())
+    {
         std::println("Couldn't open a temporary file to buffer the changes");
         return false;
     }
-    
+
     //toggle flag for checksum and then write it
     m_header.ClearHasChecksum();
     m_header.WriteHeader(ofh);
- 
+
     fh.clear();
     fh.seekg(old_offset, std::ios::beg);
-    if (!CopyExact(fh, ofh, old_size - old_offset)) {
+    if (!CopyExact(fh, ofh, old_size - old_offset))
+    {
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     ofh.close();
     return OverwriteOld(TempFilePath);
 }
 
-bool MixFile::WriteChecksum(std::fstream &fh, int32_t pos) 
+bool MixFile::WriteChecksum(std::fstream &fh, int32_t pos)
 {
     SHA1 sha1;
     const std::size_t BufferSize = 144 * 7 * 1024;
     std::vector<uint8_t> buffer(BufferSize);
     uint8_t hash[20];
-    
+
     //read data into sha1 algo from dataoffset
     fh.clear();
     fh.seekg(m_header.GetHeaderSize(), std::ios::beg);
-    
-    while(fh.good()) {
-        fh.read(reinterpret_cast<char*>(&buffer.at(0)),
+
+    while (fh.good())
+    {
+        fh.read(reinterpret_cast<char *>(&buffer.at(0)),
                 static_cast<std::streamsize>(BufferSize));
         const std::streamsize numBytesRead = fh.gcount();
-        if (numBytesRead > 0) {
+        if (numBytesRead > 0)
+        {
             sha1.Update(&buffer.at(0), static_cast<unsigned int>(numBytesRead));
         }
     }
-    
+
     //clear stream
     fh.clear();
-    
+
     // get our hash and print it to console as well
     sha1.Final(hash);
     std::copy(hash, hash + 20, m_checksum);
     std::println("Checksum is {}",
-            MixId::IdStr(reinterpret_cast<const char*>(hash), 20));
-    
+                 MixId::IdStr(reinterpret_cast<const char *>(hash), 20));
+
     //write checksum, pos is position from end to start at.
     fh.seekp(pos, std::ios::end);
-    fh.write(reinterpret_cast<const char*>(hash), 20);
+    fh.write(reinterpret_cast<const char *>(hash), 20);
 
     return fh.good();
 }
-    
-void MixFile::PrintFileList() 
+
+void MixFile::PrintFileList()
 {
     std::string fname;
     MixIndexIterator it = m_header.GetBegin();
-    while(it != m_header.GetEnd()){
+    while (it != m_header.GetEnd())
+    {
         //try to get a filename, if lmd doesn't have it try gmd.
         fname = m_local_db.GetName(it->first);
-        if(fname.substr(0, 4) == "[id]") {
+        if (fname.substr(0, 4) == "[id]")
+        {
             fname = m_global_db.GetName(m_header.GetGame(), it->first);
         }
-        
+
         std::println("{:>24}{:>10}{:>12}{:>12}",
-                fname, MixId::IdStr(it->first), it->second.offset, it->second.size);
+                     fname, MixId::IdStr(it->first), it->second.offset, it->second.size);
         it++;
     }
 }
 
 void MixFile::PrintInfo()
 {
-    if(m_header.GetGame()){
+    if (m_header.GetGame())
+    {
         std::print("This mix is a new style mix that supports header encryption"
-                " and checksums.\nRed Alert onwards can read this type of mix"
-                " but the ID's used differ between Red Alert and later games.\n\n");
-    } else {
+                   " and checksums.\nRed Alert onwards can read this type of mix"
+                   " but the ID's used differ between Red Alert and later games.\n\n");
+    }
+    else
+    {
         std::print("This mix is an old style mix that doesn't support header"
-                " encryption or\nchecksums.\nTiberian Dawn and Sole Survivor"
-                " use this format exclusively and Red Alert can\nuse them as well"
-                ".\n\n");
+                   " encryption or\nchecksums.\nTiberian Dawn and Sole Survivor"
+                   " use this format exclusively and Red Alert can\nuse them as well"
+                   ".\n\n");
     }
     std::println("It contains {} files which take up {} bytes\n",
-            m_header.GetFileCount(), m_header.GetBodySize());
-    if(m_header.GetIsEncrypted()){
+                 m_header.GetFileCount(), m_header.GetBodySize());
+    if (m_header.GetIsEncrypted())
+    {
         std::println("The mix has an encrypted header.\n\nThe blowfish key is {}\n",
-                MixId::IdStr(m_header.GetKey(), 56));
+                     MixId::IdStr(m_header.GetKey(), 56));
         std::println("The key was recovered from the following key source:\n{}\n",
-                MixId::IdStr(m_header.GetKeySource(), 80));
+                     MixId::IdStr(m_header.GetKeySource(), 80));
     }
-    if(m_header.GetHasChecksum()){
+    if (m_header.GetHasChecksum())
+    {
         std::println("The mix has a SHA1 checksum:\nSHA1: {}\n",
-                MixId::IdStr(reinterpret_cast<const char*>(m_checksum), 20));
+                     MixId::IdStr(reinterpret_cast<const char *>(m_checksum), 20));
     }
 }
 
 bool MixFile::Decrypt()
 {
     std::fstream ofh;
-    
+
     //are we already decrypted?
-    if (!m_header.GetIsEncrypted()) return false;
-    
+    if (!m_header.GetIsEncrypted())
+        return false;
+
     //get some info on original file and then set header to decrypted
     uint32_t dataoffset = m_header.GetHeaderSize();
     m_header.ClearIsEncrypted();
-    
+
     ofh.open(TempFilePath, std::fstream::out | std::fstream::binary | std::fstream::trunc);
-    if (!m_header.WriteHeader(ofh)) {
+    if (!m_header.WriteHeader(ofh))
+    {
         return false;
     }
-    
+
     fh.seekg(dataoffset);
-    
-    if (!CopyToEnd(fh, ofh)) {
+
+    if (!CopyToEnd(fh, ofh))
+    {
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     ofh.close();
-    
+
     return OverwriteOld(TempFilePath);
 }
 
 bool MixFile::Encrypt()
 {
     std::fstream ofh;
-    
+
     //are we already encrypted?
-    if (m_header.GetIsEncrypted()) return false;
-    
+    if (m_header.GetIsEncrypted())
+        return false;
+
     //get some info on original file and then set header to decrypted
     uint32_t dataoffset = m_header.GetHeaderSize();
     m_header.SetIsEncrypted();
-    
+
     ofh.open(TempFilePath, std::fstream::out | std::fstream::binary | std::fstream::trunc);
-    if (!m_header.WriteHeader(ofh)) {
+    if (!m_header.WriteHeader(ofh))
+    {
         return false;
     }
-    
+
     fh.seekg(dataoffset);
-    
-    if (!CopyToEnd(fh, ofh)) {
+
+    if (!CopyToEnd(fh, ofh))
+    {
         ofh.close();
         RemoveTempFile();
         return false;
     }
-    
+
     ofh.close();
-    
+
     return OverwriteOld(TempFilePath);
 }
 
-bool MixFile::OverwriteOld(const std::string& temp)
+bool MixFile::OverwriteOld(const std::string &temp)
 {
     Close();
 
-    if (std::remove(m_file_path.c_str()) != 0) {
+    if (std::remove(m_file_path.c_str()) != 0)
+    {
         std::println("Failed to remove the original mix file");
         return false;
     }
 
-    if (std::rename(temp.c_str(), m_file_path.c_str()) != 0) {
+    if (std::rename(temp.c_str(), m_file_path.c_str()) != 0)
+    {
         std::println("Failed to rename the temporary mix file");
         return false;
     }
-    
+
     return Open(m_file_path);
 }
 
 void MixFile::Close()
 {
-    if (fh.is_open()) {
+    if (fh.is_open())
+    {
         fh.close();
     }
     fh.clear();
     m_has_lmd = false;
 }
-
