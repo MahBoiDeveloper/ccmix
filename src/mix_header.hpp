@@ -82,66 +82,111 @@ typedef std::map<int32_t, IndexInfo>::iterator MixIndexIterator;
 class MixHeader
 {
   public:
+    /// @brief Construct a header helper for a specific game's MIX format.
     MixHeader(Game game);
+
+    /// @brief Read header metadata from an archive stream.
     bool ReadHeader(std::fstream &fh);
+
+    /// @brief Read and decode the encrypted-header key source block.
     bool ReadKeySource(std::fstream &fh);
+
+    /// @brief Write the current header state to an archive stream.
     bool WriteHeader(std::fstream &fh);
+
+    /// @brief Append an index entry for a file in the archive body.
     bool AddEntry(int32_t id, uint32_t size);
+
+    /// @brief Remove an index entry and optionally compact later offsets.
     bool RemoveEntry(int32_t id, bool adjust);
+
+    /// @brief Return the index entry for a file ID, or an empty entry when missing.
     IndexInfo GetEntry(int32_t id) const;
+
+    /// @brief Return whether the header checksum flag is set.
     bool GetHasChecksum() const
     {
         return m_has_checksum;
     }
+
+    /// @brief Enable checksum support for the header.
     void SetHasChecksum();
+
+    /// @brief Disable checksum support for the header.
     void ClearHasChecksum();
+
+    /// @brief Return whether the header encryption flag is set.
     bool GetIsEncrypted() const
     {
         return m_is_encrypted;
     }
+
+    /// @brief Enable header encryption and prepare key material.
     void SetIsEncrypted();
+
+    /// @brief Disable header encryption and restore plain-header sizing.
     void ClearIsEncrypted();
+
+    /// @brief Return the game format associated with this header.
     Game GetGame() const
     {
         return m_game_type;
     }
     //void printContents();
 
+    /// @brief Return the serialized header size in bytes.
     uint32_t GetHeaderSize() const
     {
         return m_header_size;
     }
+
+    /// @brief Return the archive body size in bytes.
     uint32_t GetBodySize() const
     {
         return m_body_size;
     }
+
+    /// @brief Override the stored archive body size.
     void SetBodySize(uint32_t size)
     {
         m_body_size = size;
     }
+
+    /// @brief Return the number of indexed files in the archive.
     uint16_t GetFileCount() const
     {
         return m_file_count;
     }
+
+    /// @brief Return an iterator to the first index entry.
     MixIndexIterator GetBegin()
     {
         return m_index.begin();
     }
+
+    /// @brief Return an iterator past the last index entry.
     MixIndexIterator GetEnd()
     {
         return m_index.end();
     }
+
+    /// @brief Return the derived Blowfish key for encrypted headers.
     const char *GetKey() const
     {
         return m_key;
     }
+
+    /// @brief Return the raw 80-byte key source block for encrypted headers.
     const char *GetKeySource() const
     {
         return m_keysource;
     }
 
   private:
+    /// @brief Derive the Blowfish key from the stored key source block.
     void SetKey();
+
+    /// @brief Generate and encode a key source block for encrypted headers.
     void SetKeySource();
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
@@ -158,10 +203,19 @@ class MixHeader
     char m_keysource[80];
     char m_key[56];
 
+    /// @brief Reset the header state to a clean empty archive.
     void Reset();
+
+    /// @brief Read an encrypted header and decrypt its index entries.
     bool ReadEncrypted(std::fstream &fh);
+
+    /// @brief Write the header in encrypted form.
     bool WriteEncrypted(std::fstream &fh);
+
+    /// @brief Read a plain-text header and its index entries.
     bool ReadUnencrypted(std::fstream &fh);
+
+    /// @brief Write the header in plain-text form.
     bool WriteUnencrypted(std::fstream &fh);
     //void setGame(Game game); //{ m_game_type = game; }
 };

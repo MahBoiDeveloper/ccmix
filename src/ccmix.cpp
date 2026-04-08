@@ -96,27 +96,33 @@ struct CommandLineOptions
 
 namespace
 {
-constexpr auto GameNames = std::to_array<std::string_view>({"td",
-                                                            "ra",
-                                                            "ts",
-                                                            "ra2"});
+constexpr auto GameNames = std::to_array<std::string_view>(
+{
+    "td",
+    "ra",
+    "ts",
+    "ra2"
+});
 
-constexpr auto OptionSpecs = std::to_array<OptionSpec>({{OptionId::Extract, "--extract", ArgumentRequirement::None},
-                                                        {OptionId::Create, "--create", ArgumentRequirement::None},
-                                                        {OptionId::Add, "--add", ArgumentRequirement::None},
-                                                        {OptionId::Remove, "--remove", ArgumentRequirement::None},
-                                                        {OptionId::List, "--list", ArgumentRequirement::None},
-                                                        {OptionId::Info, "--info", ArgumentRequirement::None},
-                                                        {OptionId::LocalDb, "--lmd", ArgumentRequirement::None},
-                                                        {OptionId::Encrypt, "--encrypt", ArgumentRequirement::None},
-                                                        {OptionId::Checksum, "--checksum", ArgumentRequirement::None},
-                                                        {OptionId::File, "--file", ArgumentRequirement::Required},
-                                                        {OptionId::Id, "--id", ArgumentRequirement::Required},
-                                                        {OptionId::Directory, "--directory", ArgumentRequirement::Required},
-                                                        {OptionId::Mix, "--mix", ArgumentRequirement::Required},
-                                                        {OptionId::Game, "--game", ArgumentRequirement::Required},
-                                                        {OptionId::Help, "-?", ArgumentRequirement::None},
-                                                        {OptionId::Help, "--help", ArgumentRequirement::None}});
+constexpr auto OptionSpecs = std::to_array<OptionSpec>(
+{
+    {OptionId::Extract,   "--extract", ArgumentRequirement::None},
+    {OptionId::Create,    "--create", ArgumentRequirement::None},
+    {OptionId::Add,       "--add", ArgumentRequirement::None},
+    {OptionId::Remove,    "--remove", ArgumentRequirement::None},
+    {OptionId::List,      "--list", ArgumentRequirement::None},
+    {OptionId::Info,      "--info", ArgumentRequirement::None},
+    {OptionId::LocalDb,   "--lmd", ArgumentRequirement::None},
+    {OptionId::Encrypt,   "--encrypt", ArgumentRequirement::None},
+    {OptionId::Checksum,  "--checksum", ArgumentRequirement::None},
+    {OptionId::File,      "--file", ArgumentRequirement::Required},
+    {OptionId::Id,        "--id", ArgumentRequirement::Required},
+    {OptionId::Directory, "--directory", ArgumentRequirement::Required},
+    {OptionId::Mix,       "--mix", ArgumentRequirement::Required},
+    {OptionId::Game,      "--game", ArgumentRequirement::Required},
+    {OptionId::Help,      "-?", ArgumentRequirement::None},
+    {OptionId::Help,      "--help", ArgumentRequirement::None}
+});
 
 [[nodiscard]] bool FileExists(const std::string &path)
 {
@@ -237,11 +243,12 @@ inline void ShowUsage(const std::string_view programName)
 
 void ShowHelp(const std::string_view programName)
 {
-    std::println("\n***ccmix program usage***");
+    std::println("***ccmix program usage***");
     std::println("Usage: {} [--mode] (--file FILE) (--directory DIR) (--game [td|ra|ts|ra2]) [--mix MIXFILE]",
                  programName);
-    std::print(
-        "\nModes:\n\n"
+    std::println
+    (
+        "Modes:\n\n"
         "--extract\n"
         "Extracts the contents of the specified mix file to the current directory.\n"
         "--file specifies a single file to extract.\n"
@@ -277,7 +284,8 @@ void ShowHelp(const std::string_view programName)
         "--checksum specifies the mix should not have a checksum.\n"
         "--game specified the game the mix is from, td covers the\n"
         "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
-        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge.\n\n");
+        "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's Revenge."
+    );
 }
 
 inline void NoMultiMode(const std::string_view programName)

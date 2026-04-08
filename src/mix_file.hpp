@@ -34,8 +34,11 @@
 class MixFile
 {
   public:
+    /// @brief Construct a mix-file controller with a global database and default game.
     MixFile(const std::string &gmd = "global mix database.dat",
             Game openGame = GameTd);
+
+    /// @brief Close any open archive state on destruction.
     virtual ~MixFile();
     /// @brief Open a mix archive.
     /// @param path Mix file path.
@@ -104,10 +107,20 @@ class MixFile
     typedef std::map<uint32_t, uint32_t> SkipMap;
     typedef std::pair<uint32_t, uint32_t> SkipEntry;
     typedef std::map<uint32_t, uint32_t>::const_iterator SkipMapIterator;
+
+    /// @brief Recompute and write the archive checksum.
     bool WriteChecksum(std::fstream &fh, int32_t pos = 0);
+
+    /// @brief Return the file name component of a path.
     std::string BaseName(const std::string &pathname) const;
+
+    /// @brief Rewrite the current archive with an unencrypted header.
     bool Decrypt();
+
+    /// @brief Rewrite the current archive with an encrypted header.
     bool Encrypt();
+
+    /// @brief Replace the original archive with a temporary output file.
     bool OverwriteOld(const std::string &temp);
     MixHeader m_header; // mix file header
     MixGmd m_global_db;

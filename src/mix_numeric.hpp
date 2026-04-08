@@ -8,6 +8,7 @@
 
 namespace MixNumeric
 {
+/// @brief Convert a value to uint32_t and reject anything outside the MIX format range.
 template <typename T>
 uint32_t ToUint32(T value, std::string_view context)
 {
