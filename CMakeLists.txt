@@ -110,6 +110,7 @@ set(WWMIX_SRC
     ${PROJECT_SRC_DIR}/wwmix/MixFile.cpp
     ${PROJECT_SRC_DIR}/wwmix/MixHeader.cpp
     ${PROJECT_SRC_DIR}/wwmix/MixId.cpp
+    ${PROJECT_SRC_DIR}/wwmix/Utf8Path.cpp
     ${PROJECT_SRC_DIR}/wwmix/Application.cpp
    )
 

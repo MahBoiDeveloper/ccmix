@@ -1,5 +1,6 @@
 #include "MixGmd.hpp"
 #include "MixNumeric.hpp"
+#include "Utf8Path.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -23,20 +24,20 @@ struct GmdSourceInfo
 std::string NormalizePath(const std::string &path)
 {
     std::error_code error;
-    const fs::path absolutePath = fs::absolute(fs::path(path), error);
+    const fs::path absolutePath = fs::absolute(Utf8Path::FromUtf8(path), error);
     if (error)
     {
-        return fs::path(path).lexically_normal().string();
+        return Utf8Path::ToUtf8(Utf8Path::FromUtf8(path).lexically_normal());
     }
 
-    return absolutePath.lexically_normal().string();
+    return Utf8Path::ToUtf8(absolutePath.lexically_normal());
 }
 
 bool TryGetSourceInfo(const std::string &sourcePath, GmdSourceInfo &info)
 {
     const std::string normalizedPath = NormalizePath(sourcePath);
     std::error_code error;
-    const fs::path path(normalizedPath);
+    const fs::path path = Utf8Path::FromUtf8(normalizedPath);
     const std::uintmax_t size = fs::file_size(path, error);
     if (error)
     {
@@ -123,8 +124,8 @@ bool MixGmd::Load(const std::string &sourcePath, const std::string &cachePath,
         return true;
     }
 
-    std::fstream sourceFile(
-        sourcePath.c_str(), std::ios::in | std::ios::binary);
+    std::fstream sourceFile;
+    Utf8Path::Open(sourceFile, sourcePath, std::ios::in | std::ios::binary);
     if (sourceFile.is_open())
     {
         ReadDb(sourceFile);
@@ -168,8 +169,8 @@ bool MixGmd::WriteCache(const std::string &sourcePath,
          }}
     };
 
-    std::ofstream cacheFile(
-        cachePath.c_str(), std::ios::out | std::ios::trunc);
+    std::ofstream cacheFile;
+    Utf8Path::Open(cacheFile, cachePath, std::ios::out | std::ios::trunc);
     if (!cacheFile.is_open())
     {
         return false;
@@ -183,7 +184,8 @@ bool MixGmd::ReadCache(const std::string &sourcePath,
                        const std::string &cachePath,
                        const bool allowStaleCache)
 {
-    std::ifstream cacheFile(cachePath.c_str(), std::ios::in);
+    std::ifstream cacheFile;
+    Utf8Path::Open(cacheFile, cachePath, std::ios::in);
     if (!cacheFile.is_open())
     {
         return false;

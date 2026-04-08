@@ -1,6 +1,7 @@
 #include "ArchiveCli.hpp"
 
 #include "MixFile.hpp"
+#include "Utf8Path.hpp"
 
 #include <array>
 #include <charconv>
@@ -279,8 +280,7 @@ class ArchiveEnvironment
 
     static bool FileExists(const std::string &path)
     {
-        std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
-        return file.is_open();
+        return Utf8Path::Exists(path);
     }
 
 #ifdef _WIN32
@@ -904,7 +904,7 @@ class ArchiveCommandRunner
     int RunAdd(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath))
+        if (!inputFile.Open(options.ArchivePath, true))
         {
             std::println("Cannot open specified mix file");
             return 1;
@@ -935,7 +935,7 @@ class ArchiveCommandRunner
     int RunRemove(const ArchiveCliOptions &options) const
     {
         MixFile inputFile(m_globalDbPath, options.GameType, m_globalDbCachePath);
-        if (!inputFile.Open(options.ArchivePath))
+        if (!inputFile.Open(options.ArchivePath, true))
         {
             std::println("Cannot open specified mix file");
             return 1;

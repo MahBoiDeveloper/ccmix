@@ -20,12 +20,21 @@ void MixLmd::ReadDb(std::fstream &fh, uint32_t offset, uint32_t size)
     m_size = 52;
     AddName(GetDbName());
 
+    if (size < 52)
+    {
+        return;
+    }
+
     std::vector<char> data(size);
     fh.seekg(offset, std::ios_base::beg);
-    fh.read(&data.at(0), size);
+    fh.read(data.data(), size);
+    if (fh.gcount() != static_cast<std::streamsize>(size))
+    {
+        return;
+    }
 
     //move pointer past most of header to entry count, total header is 52 bytes.
-    const char *cursor = &data.at(0) + 48;
+    const char *cursor = data.data() + 48;
 
     //get count of entries
     int32_t count = 0;

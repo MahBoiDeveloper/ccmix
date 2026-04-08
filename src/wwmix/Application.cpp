@@ -1,23 +1,30 @@
 #include "Application.hpp"
 
 #include "ArchiveCli.hpp"
+#include "MixFile.hpp"
 #include "MixGmd.hpp"
 #include "MixHeader.hpp"
 #include "MixId.hpp"
+#include "Utf8Path.hpp"
 
 #include "cryptopp/blowfish.h"
 #include "cryptopp/modes.h"
 
+#include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <print>
 #include <span>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -31,6 +38,15 @@ struct ApplicationContext
     std::string ProgramName;
     const CommandCatalog *Commands = nullptr;
 
+    std::string ProgramDirectory() const
+    {
+        const std::filesystem::path programPath = Utf8Path::FromUtf8(ProgramPath);
+        const std::filesystem::path programDir =
+            programPath.has_parent_path() ? programPath.parent_path() :
+                                            std::filesystem::path(".");
+        return Utf8Path::ToUtf8(programDir);
+    }
+
     std::string DisplayName(const std::string_view commandName) const
     {
         if (commandName.empty())
@@ -43,11 +59,19 @@ struct ApplicationContext
 
     std::string GmdCachePath() const
     {
-        const std::filesystem::path programPath(ProgramPath);
-        const std::filesystem::path programDir =
-            programPath.has_parent_path() ? programPath.parent_path() :
-                                            std::filesystem::path(".");
-        return (programDir / "gmd.json").string();
+        return Utf8Path::Join(ProgramDirectory(), "gmd.json");
+    }
+
+    std::string GlobalDbPath() const
+    {
+        const std::filesystem::path localPath =
+            Utf8Path::FromUtf8(ProgramDirectory()) / "global mix database.dat";
+        if (std::filesystem::exists(localPath))
+        {
+            return Utf8Path::ToUtf8(localPath);
+        }
+
+        return "global mix database.dat";
     }
 };
 
@@ -143,7 +167,8 @@ class HelpPrinter
         std::println("  {} gmd --input GMD --additions CSV --output GMD [--game GAME]",
                      programName);
         std::println("  {} key --mix FILE [--game GAME]", programName);
-        std::println("  {} help [mix|gmd|key]", programName);
+        std::println("  {} guess --mix FILE [OPTIONS]", programName);
+        std::println("  {} help [mix|gmd|key|guess]", programName);
         std::println("");
         std::println("Archive commands:");
         ShowEntry("x, e, extract", "Extract archive contents.");
@@ -156,6 +181,7 @@ class HelpPrinter
         std::println("Other commands:");
         ShowEntry("gmd", "Database editing workflow from gmdedit.");
         ShowEntry("key", "Encrypted-header key inspection from mixkey.");
+        ShowEntry("guess", "Bruteforce candidate names for unknown MIX IDs.");
         ShowEntry("mix", "Compatibility wrapper for archive commands.");
         ShowEntry("help", "Show top-level or command-specific help.");
         std::println("");
@@ -185,6 +211,17 @@ class HelpPrinter
         ShowEntry("--mix FILE", "Encrypted MIX file to inspect.");
         ShowEntry("--game GAME", "Header format hint for key decoding.");
         std::println("");
+        std::println("Guess Flags:");
+        ShowEntry("--mix FILE", "Archive whose unknown IDs should be targeted.");
+        ShowEntry("--id HEX", "Target a specific ID; repeatable.");
+        ShowEntry("--ext EXT[,EXT...]", "Required extension list for candidate names.");
+        ShowEntry("--charset CHARS", "Characters used for the bruteforced stem.");
+        ShowEntry("--min N", "Minimum bruteforced stem length.");
+        ShowEntry("--max N", "Maximum bruteforced stem length.");
+        ShowEntry("--prefix TEXT", "Fixed prefix before the bruteforced stem.");
+        ShowEntry("--suffix TEXT", "Fixed suffix before the extension.");
+        ShowEntry("--force", "Allow very large search spaces.");
+        std::println("");
         std::println("Compatibility:");
         std::println("  {} mix l CONQUER.MIX", programName);
         std::println("  {} --list --mix CONQUER.MIX", programName);
@@ -193,12 +230,13 @@ class HelpPrinter
         std::println("  {} help mix", programName);
         std::println("  {} help gmd", programName);
         std::println("  {} help key", programName);
+        std::println("  {} help guess", programName);
     }
 
     static void ShowHelpUsage(const std::string_view programName)
     {
         std::println("Usage:");
-        std::println("  {} help [mix|gmd|key]", programName);
+        std::println("  {} help [mix|gmd|key|guess]", programName);
     }
 
     static void ShowGmdUsage(const std::string_view programName)
@@ -244,6 +282,49 @@ class HelpPrinter
         ShowEntry("blowfish key", "Recovered 56-byte key in hexadecimal form.");
         ShowEntry("key source", "Raw 80-byte key source block from the archive.");
         ShowEntry("first block", "First decrypted 8-byte encrypted-header block.");
+    }
+
+    static void ShowGuessUsage(const std::string_view programName)
+    {
+        std::println("Usage:");
+        std::println("  {} --mix FILE [--game GAME] --ext EXT[,EXT...] [--min N] [--max N]",
+                     programName);
+        std::println("      [--charset CHARS] [--prefix TEXT] [--suffix TEXT] [--force]",
+                     programName);
+        std::println("  {} --id HEX [--id HEX ...] [--game GAME] --ext EXT[,EXT...] [--min N] [--max N]",
+                     programName);
+    }
+
+    static void ShowGuessHelp(const std::string_view programName)
+    {
+        std::println("Unknown MIX filename bruteforcer");
+        std::println("");
+        ShowGuessUsage(programName);
+        std::println("");
+        std::println("Flags:");
+        ShowEntry("-?, --help", "Show this help message and exit.");
+        ShowEntry("--mix FILE", "Use unresolved IDs from an archive as targets.");
+        ShowEntry("--id HEX", "Target a specific hexadecimal ID; repeatable.");
+        ShowEntry("--game GAME", "Hashing mode: td, ra, ts, or ra2. Default: td.");
+        ShowEntry("--ext EXT[,EXT...]", "Required extension list such as .shp,.ini.");
+        ShowEntry("--charset CHARS", "Characters used for the bruteforced stem.");
+        ShowEntry("--min N", "Minimum bruteforced stem length. Default: 1.");
+        ShowEntry("--max N", "Maximum bruteforced stem length. Default: 3.");
+        ShowEntry("--prefix TEXT", "Fixed text before the bruteforced stem.");
+        ShowEntry("--suffix TEXT", "Fixed text after the bruteforced stem.");
+        ShowEntry("--force", "Allow search spaces larger than the safety limit.");
+        std::println("");
+        std::println("Notes:");
+        ShowEntry("target IDs", "Use --id to target specific IDs, or --mix to scan unknown archive entries.");
+        ShowEntry("search space", "Candidate names are built as prefix + stem + suffix + extension.");
+        std::println("");
+        std::println("Examples:");
+        std::println("  {} --mix CACHE.MIX --game ts --ext .shp --min 3 --max 4",
+                     programName);
+        std::println("  {} --id DEADBEEF --game ra --ext .ini --charset abcdef0123 --min 1 --max 5",
+                     programName);
+        std::println("  {} --mix TEM.MIX --game ts --ext .aud,.bag --prefix sfx_ --min 2 --max 3 --force",
+                     programName);
     }
 
   private:
@@ -301,8 +382,10 @@ class GmdCommand final : public Command
             }
         }
 
-        std::fstream outputFile(
-            state.OutputPath, std::ios_base::out | std::ios_base::binary);
+        std::fstream outputFile;
+        Utf8Path::Open(
+            outputFile, state.OutputPath,
+            std::ios_base::out | std::ios_base::binary);
         if (!outputFile.is_open())
         {
             std::println("Failed to open output file: {}", state.OutputPath);
@@ -475,7 +558,8 @@ class GmdCommand final : public Command
 
     static std::optional<NamePairs> ReadAdditions(const std::string &path)
     {
-        std::fstream file(path, std::ios_base::in);
+        std::fstream file;
+        Utf8Path::Open(file, path, std::ios_base::in);
         if (!file.is_open())
         {
             std::println("Failed to open additions file: {}", path);
@@ -536,8 +620,10 @@ class KeyCommand final : public Command
             return state.ShowedHelp ? 0 : 1;
         }
 
-        std::fstream file(
-            state.MixPath, std::ios_base::in | std::ios_base::binary);
+        std::fstream file;
+        Utf8Path::Open(
+            file, state.MixPath,
+            std::ios_base::in | std::ios_base::binary);
         if (!file.is_open())
         {
             std::println("Failed to open mix file: {}", state.MixPath);
@@ -705,6 +791,558 @@ class KeyCommand final : public Command
     }
 };
 
+class GuessBruteforcer
+{
+  public:
+    struct Options
+    {
+        Game GameType = Game::TD;
+        std::vector<std::string> Extensions;
+        std::string Charset = "abcdefghijklmnopqrstuvwxyz0123456789_";
+        std::string Prefix;
+        std::string Suffix;
+        uint32_t MinLength = 1;
+        uint32_t MaxLength = 3;
+    };
+
+    struct Match
+    {
+        int32_t Id = 0;
+        std::string Name;
+    };
+
+    struct Result
+    {
+        uint64_t Tried = 0;
+        std::vector<Match> Matches;
+        std::vector<int32_t> UnresolvedIds;
+    };
+
+    static constexpr uint64_t SafeSearchLimit = 50000000;
+
+    static uint64_t EstimateCandidateCount(const Options &options)
+    {
+        if (options.Extensions.empty())
+        {
+            return 0;
+        }
+
+        uint64_t total = 0;
+        for (uint32_t length = options.MinLength; length <= options.MaxLength; ++length)
+        {
+            uint64_t combinations = 1;
+            for (uint32_t index = 0; index < length; ++index)
+            {
+                combinations = SaturatingMultiply(
+                    combinations,
+                    static_cast<uint64_t>(options.Charset.size()));
+            }
+
+            combinations = SaturatingMultiply(
+                combinations,
+                static_cast<uint64_t>(options.Extensions.size()));
+            total = SaturatingAdd(total, combinations);
+        }
+
+        return total;
+    }
+
+    static Result Run(const std::vector<int32_t> &targetIds,
+                      const Options &options)
+    {
+        Result result;
+        std::vector<int32_t> orderedTargets;
+        std::unordered_set<int32_t> remainingIds;
+        for (const int32_t id : targetIds)
+        {
+            if (remainingIds.insert(id).second)
+            {
+                orderedTargets.push_back(id);
+            }
+        }
+
+        std::unordered_map<int32_t, std::string> matches;
+        for (uint32_t length = options.MinLength;
+             length <= options.MaxLength && !remainingIds.empty();
+             ++length)
+        {
+            std::string stem(length, '\0');
+            SearchStem(stem, 0, options, remainingIds, matches, result.Tried);
+        }
+
+        for (const int32_t id : orderedTargets)
+        {
+            const auto iterator = matches.find(id);
+            if (iterator != matches.end())
+            {
+                result.Matches.push_back({id, iterator->second});
+            }
+            else
+            {
+                result.UnresolvedIds.push_back(id);
+            }
+        }
+
+        return result;
+    }
+
+  private:
+    static uint64_t SaturatingMultiply(const uint64_t left, const uint64_t right)
+    {
+        if (left == 0 || right == 0)
+        {
+            return 0;
+        }
+        if (left > std::numeric_limits<uint64_t>::max() / right)
+        {
+            return std::numeric_limits<uint64_t>::max();
+        }
+
+        return left * right;
+    }
+
+    static uint64_t SaturatingAdd(const uint64_t left, const uint64_t right)
+    {
+        if (left > std::numeric_limits<uint64_t>::max() - right)
+        {
+            return std::numeric_limits<uint64_t>::max();
+        }
+
+        return left + right;
+    }
+
+    static void SearchStem(std::string &stem, const std::size_t index,
+                           const Options &options,
+                           std::unordered_set<int32_t> &remainingIds,
+                           std::unordered_map<int32_t, std::string> &matches,
+                           uint64_t &tried)
+    {
+        if (remainingIds.empty())
+        {
+            return;
+        }
+
+        if (index == stem.size())
+        {
+            const std::string baseName = options.Prefix + stem + options.Suffix;
+            for (const std::string &extension : options.Extensions)
+            {
+                const std::string candidateName = baseName + extension;
+                ++tried;
+
+                const int32_t candidateId =
+                    MixId::IdGen(options.GameType, candidateName);
+                if (remainingIds.erase(candidateId) > 0)
+                {
+                    matches.emplace(candidateId, candidateName);
+                    std::println("Match: {} -> {}",
+                                 MixId::IdStr(candidateId), candidateName);
+                    if (remainingIds.empty())
+                    {
+                        return;
+                    }
+                }
+
+                if (tried % 1000000 == 0 && !remainingIds.empty())
+                {
+                    std::println("Tried {} candidates, {} IDs remaining...",
+                                 tried, remainingIds.size());
+                }
+            }
+
+            return;
+        }
+
+        for (const char value : options.Charset)
+        {
+            stem[index] = value;
+            SearchStem(stem, index + 1, options, remainingIds, matches, tried);
+            if (remainingIds.empty())
+            {
+                return;
+            }
+        }
+    }
+};
+
+class GuessCommand final : public Command
+{
+  public:
+    std::string_view CanonicalName() const override
+    {
+        return "guess";
+    }
+
+    bool Matches(const std::string_view token) const override
+    {
+        return token == "guess" || token == "bruteforce";
+    }
+
+    int Run(const ApplicationContext &context,
+            const std::span<char *> arguments) const override
+    {
+        State state;
+        const std::span<char *> commandArguments =
+            arguments.size() > 1 ? arguments.subspan(1) : std::span<char *>();
+        if (!Parse(context.DisplayName(CanonicalName()), commandArguments, state))
+        {
+            return state.ShowedHelp ? 0 : 1;
+        }
+
+        std::vector<int32_t> targetIds = state.TargetIds;
+        if (targetIds.empty())
+        {
+            MixFile mixFile(
+                context.GlobalDbPath(), state.Options.GameType,
+                context.GmdCachePath());
+            if (!mixFile.Open(state.MixPath))
+            {
+                std::println("Cannot open specified mix file");
+                return 1;
+            }
+
+            targetIds = mixFile.CollectUnknownIds();
+            if (targetIds.empty())
+            {
+                std::println("No unknown archive IDs were found in {}.",
+                             state.MixPath);
+                return 0;
+            }
+        }
+
+        const uint64_t estimate =
+            GuessBruteforcer::EstimateCandidateCount(state.Options);
+        std::println("Target IDs: {}", targetIds.size());
+        std::println("Search space: {} candidate names", estimate);
+        if (estimate > GuessBruteforcer::SafeSearchLimit && !state.Force)
+        {
+            std::println("Refusing to search more than {} candidates without --force.",
+                         GuessBruteforcer::SafeSearchLimit);
+            return 1;
+        }
+
+        const GuessBruteforcer::Result result =
+            GuessBruteforcer::Run(targetIds, state.Options);
+
+        std::println("Tried {} candidate names.", result.Tried);
+        if (!result.Matches.empty())
+        {
+            std::println("Resolved:");
+            for (const GuessBruteforcer::Match &match : result.Matches)
+            {
+                std::println("  {} -> {}", MixId::IdStr(match.Id), match.Name);
+            }
+        }
+
+        if (!result.UnresolvedIds.empty())
+        {
+            std::println("Still unresolved:");
+            for (const int32_t id : result.UnresolvedIds)
+            {
+                std::println("  {}", MixId::IdStr(id));
+            }
+        }
+
+        return result.UnresolvedIds.empty() ? 0 : 1;
+    }
+
+    void ShowHelp(const ApplicationContext &context) const override
+    {
+        HelpPrinter::ShowGuessHelp(context.DisplayName(CanonicalName()));
+    }
+
+  private:
+    struct State
+    {
+        std::string DisplayName;
+        std::string MixPath;
+        std::vector<int32_t> TargetIds;
+        GuessBruteforcer::Options Options;
+        bool Force = false;
+        bool ShowedHelp = false;
+    };
+
+    static bool Parse(const std::string &displayName,
+                      const std::span<char *> arguments, State &state)
+    {
+        state.DisplayName = displayName;
+
+        if (arguments.empty())
+        {
+            HelpPrinter::ShowGuessUsage(displayName);
+            state.ShowedHelp = true;
+            return false;
+        }
+
+        for (int index = 0; index < static_cast<int>(arguments.size()); ++index)
+        {
+            const std::string_view token(arguments[index]);
+            if (token == "-?" || token == "--help")
+            {
+                HelpPrinter::ShowGuessHelp(displayName);
+                state.ShowedHelp = true;
+                return false;
+            }
+            if (token == "--mix")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "a mix file",
+                                       state.MixPath))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--game")
+            {
+                std::string gameName;
+                if (!TryReadNamedValue(arguments, index, token, "a game name",
+                                       gameName))
+                {
+                    return false;
+                }
+
+                const std::optional<Game> game = GameCodec::Parse(gameName);
+                if (!game.has_value())
+                {
+                    std::println("--game is either td, ra, ts or ra2.");
+                    return false;
+                }
+                state.Options.GameType = *game;
+                continue;
+            }
+            if (token == "--id")
+            {
+                std::string idValue;
+                if (!TryReadNamedValue(arguments, index, token, "a hexadecimal ID",
+                                       idValue))
+                {
+                    return false;
+                }
+
+                int32_t parsedId = 0;
+                if (!TryParseId(idValue, parsedId))
+                {
+                    std::println("Invalid hexadecimal ID: {}", idValue);
+                    return false;
+                }
+
+                state.TargetIds.push_back(parsedId);
+                continue;
+            }
+            if (token == "--ext")
+            {
+                std::string extensionValue;
+                if (!TryReadNamedValue(arguments, index, token, "an extension list",
+                                       extensionValue))
+                {
+                    return false;
+                }
+
+                const std::vector<std::string> parsedExtensions =
+                    ParseExtensions(extensionValue);
+                if (parsedExtensions.empty())
+                {
+                    std::println("--ext requires at least one extension.");
+                    return false;
+                }
+
+                state.Options.Extensions.insert(
+                    state.Options.Extensions.end(),
+                    parsedExtensions.begin(),
+                    parsedExtensions.end());
+                continue;
+            }
+            if (token == "--charset")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "a character set",
+                                       state.Options.Charset))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--prefix")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "a prefix",
+                                       state.Options.Prefix))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--suffix")
+            {
+                if (!TryReadNamedValue(arguments, index, token, "a suffix",
+                                       state.Options.Suffix))
+                {
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--min")
+            {
+                std::string lengthValue;
+                if (!TryReadNamedValue(arguments, index, token, "a minimum length",
+                                       lengthValue))
+                {
+                    return false;
+                }
+                if (!TryParseLength(lengthValue, state.Options.MinLength))
+                {
+                    std::println("Invalid minimum length: {}", lengthValue);
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--max")
+            {
+                std::string lengthValue;
+                if (!TryReadNamedValue(arguments, index, token, "a maximum length",
+                                       lengthValue))
+                {
+                    return false;
+                }
+                if (!TryParseLength(lengthValue, state.Options.MaxLength))
+                {
+                    std::println("Invalid maximum length: {}", lengthValue);
+                    return false;
+                }
+                continue;
+            }
+            if (token == "--force")
+            {
+                state.Force = true;
+                continue;
+            }
+
+            std::println("Invalid argument: {}", token);
+            HelpPrinter::ShowGuessUsage(displayName);
+            return false;
+        }
+
+        state.Options.Charset = DeduplicateCharacters(state.Options.Charset);
+        state.Options.Extensions = DeduplicateStrings(state.Options.Extensions);
+
+        if (state.MixPath.empty() && state.TargetIds.empty())
+        {
+            std::println("You must specify --mix FILE or at least one --id HEX.");
+            return false;
+        }
+        if (state.Options.Extensions.empty())
+        {
+            std::println("You must specify at least one --ext EXT.");
+            return false;
+        }
+        if (state.Options.Charset.empty())
+        {
+            std::println("--charset must not be empty.");
+            return false;
+        }
+        if (state.Options.MinLength > state.Options.MaxLength)
+        {
+            std::println("--min must not be greater than --max.");
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool TryReadNamedValue(const std::span<char *> arguments, int &index,
+                                  const std::string_view optionName,
+                                  const std::string_view valueDescription,
+                                  std::string &value)
+    {
+        if (index + 1 >= static_cast<int>(arguments.size()) ||
+            ArchiveCli::IsSwitchToken(arguments[index + 1]))
+        {
+            std::println("{} requires {}.", optionName, valueDescription);
+            return false;
+        }
+
+        value = arguments[++index];
+        return true;
+    }
+
+    static bool TryParseId(const std::string_view text, int32_t &value)
+    {
+        uint32_t parsedValue = 0;
+        const std::from_chars_result result = std::from_chars(
+            text.data(), text.data() + text.size(), parsedValue, 16);
+        if (result.ec != std::errc() ||
+            result.ptr != text.data() + text.size())
+        {
+            return false;
+        }
+
+        value = static_cast<int32_t>(parsedValue);
+        return true;
+    }
+
+    static bool TryParseLength(const std::string_view text, uint32_t &value)
+    {
+        const std::from_chars_result result = std::from_chars(
+            text.data(), text.data() + text.size(), value, 10);
+        return result.ec == std::errc() &&
+               result.ptr == text.data() + text.size();
+    }
+
+    static std::vector<std::string> ParseExtensions(const std::string_view text)
+    {
+        std::vector<std::string> extensions;
+        std::size_t start = 0;
+        while (start <= text.size())
+        {
+            const std::size_t separator = text.find(',', start);
+            const std::size_t end =
+                separator == std::string_view::npos ? text.size() : separator;
+            const std::string_view part = text.substr(start, end - start);
+            if (!part.empty())
+            {
+                extensions.push_back(std::string(part));
+            }
+
+            if (separator == std::string_view::npos)
+            {
+                break;
+            }
+
+            start = separator + 1;
+        }
+
+        return extensions;
+    }
+
+    static std::string DeduplicateCharacters(const std::string &text)
+    {
+        std::string uniqueCharacters;
+        for (const char value : text)
+        {
+            if (uniqueCharacters.find(value) == std::string::npos)
+            {
+                uniqueCharacters.push_back(value);
+            }
+        }
+
+        return uniqueCharacters;
+    }
+
+    static std::vector<std::string> DeduplicateStrings(
+        const std::vector<std::string> &values)
+    {
+        std::vector<std::string> uniqueValues;
+        for (const std::string &value : values)
+        {
+            if (std::find(uniqueValues.begin(), uniqueValues.end(), value) ==
+                uniqueValues.end())
+            {
+                uniqueValues.push_back(value);
+            }
+        }
+
+        return uniqueValues;
+    }
+};
+
 class MixCommand final : public Command
 {
   public:
@@ -814,6 +1452,7 @@ CommandCatalog::CommandCatalog()
     Add<MixCommand>();
     Add<GmdCommand>();
     Add<KeyCommand>();
+    Add<GuessCommand>();
     Add<ArchiveRootCommand>();
 }
 

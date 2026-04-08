@@ -43,9 +43,10 @@ class MixFile
     virtual ~MixFile();
     /// @brief Open a mix archive.
     /// @param path Mix file path.
+    /// @param writeAccess Open the archive with write access when modifications are needed.
     /// @retval true The file was opened.
     /// @retval false The file was not found.
-    bool Open(const std::string &path);
+    bool Open(const std::string &path, bool writeAccess = false);
     /// @brief Extract a file from the mix archive by CRC ID.
     /// @param fileID CRC ID of the file.
     /// @param outPath Extracted file path.
@@ -98,6 +99,13 @@ class MixFile
     /// @brief Print the mix archive file list.
     /// Prints file CRC, file offset, and file size.
     void PrintFileList();
+
+    /// @brief Resolve a file ID to the best known file name.
+    std::string ResolveName(int32_t id) const;
+
+    /// @brief Collect archive entry IDs that still have no known file name.
+    std::vector<int32_t> CollectUnknownIds();
+
     /// @brief Print information about the mix file.
     void PrintInfo();
     /// @brief Close the mix file.
